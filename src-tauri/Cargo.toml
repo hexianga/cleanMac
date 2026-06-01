@@ -1,6 +1,6 @@
 [package]
 name = "cleanmac-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "CleanMac macOS 桌面客户端"
 authors = ["canglang"]
 edition = "2021"

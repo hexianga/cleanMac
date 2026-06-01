@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (semver, e.g. 0.1.1)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -24,6 +30,39 @@ jobs:
           cache: pnpm
 
       - uses: dtolnay/rust-toolchain@stable
+
+      - name: Resolve release version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RAW="${{ github.event.inputs.version }}"
+          else
+            RAW="${GITHUB_REF_NAME#v}"
+          fi
+          RAW="${RAW#v}"
+          if ! echo "$RAW" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "Invalid semver: $RAW (expected e.g. 0.1.1)" >&2
+            exit 1
+          fi
+          echo "semver=$RAW" >> "$GITHUB_OUTPUT"
+          echo "tag=v$RAW" >> "$GITHUB_OUTPUT"
+
+      - name: Sync version in project files
+        run: |
+          VERSION="${{ steps.version.outputs.semver }}"
+          node <<EOF
+          const fs = require("fs");
+          const pkgPath = "package.json";
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+          pkg.version = "$VERSION";
+          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+
+          const tauriPath = "src-tauri/tauri.conf.json";
+          const tauri = JSON.parse(fs.readFileSync(tauriPath, "utf8"));
+          tauri.version = "$VERSION";
+          fs.writeFileSync(tauriPath, JSON.stringify(tauri, null, 2) + "\n");
+          EOF
+          sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -70,5 +109,8 @@ jobs:
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: CleanMac ${{ steps.version.outputs.tag }}
           files: src-tauri/target/release/bundle/dmg/*.dmg
           generate_release_notes: true

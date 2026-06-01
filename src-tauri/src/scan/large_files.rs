@@ -196,10 +196,7 @@ mod tests {
             home,
             settings: Settings {
                 large_file_min_bytes: MIN_BYTES,
-                duplicate_min_bytes: 1,
                 include_node_modules,
-                scan_duplicates: false,
-                max_hash_bytes: 512 * 1024 * 1024,
                 ..Settings::default()
             },
             cancel: None,

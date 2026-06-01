@@ -1,0 +1,172 @@
+import { Box, Button, Checkbox, Text } from "@mantine/core";
+import { memo, useMemo } from "react";
+import { revealInFinder } from "../lib/api";
+import { glass } from "../lib/cleanMacTheme";
+import { formatBytes } from "../lib/formatBytes";
+import {
+  DETAIL_GROUP_HEADER_HEIGHT,
+  DETAIL_ITEM_ROW_HEIGHT,
+  flattenDetailGroups,
+  type DetailListRow,
+} from "../lib/detailListRows";
+import { groupItemsForCategory } from "../lib/groupScanItems";
+import type { ScanItem } from "../lib/types";
+
+const GRID_COLUMNS = "40px minmax(0, 1fr) 100px 120px 140px";
+
+interface DetailItemListProps {
+  scannerId: string;
+  items: ScanItem[];
+  selectedIds: Set<string>;
+  onToggleItem: (itemId: string, checked: boolean) => void;
+}
+
+export function DetailItemList({
+  scannerId,
+  items,
+  selectedIds,
+  onToggleItem,
+}: DetailItemListProps) {
+  const rows = useMemo(() => {
+    const groups = groupItemsForCategory(scannerId, items);
+    return flattenDetailGroups(groups);
+  }, [scannerId, items]);
+
+  return (
+    <Box w="100%">
+      <Box
+        style={{
+          display: "grid",
+          gridTemplateColumns: GRID_COLUMNS,
+          gap: 0,
+          padding: "8px 12px",
+          borderBottom: `1px solid ${glass.border}`,
+        }}
+      >
+        <Text size="xs" c="dimmed" fw={600} />
+        <Text size="xs" c="dimmed" fw={600}>
+          文件名
+        </Text>
+        <Text size="xs" c="dimmed" fw={600}>
+          大小
+        </Text>
+        <Text size="xs" c="dimmed" fw={600}>
+          类型
+        </Text>
+        <Text size="xs" c="dimmed" fw={600}>
+          操作
+        </Text>
+      </Box>
+
+      {rows.map((row) =>
+        row.kind === "group-header" ? (
+          <GroupHeaderRow key={row.key} row={row} />
+        ) : (
+          <ItemRow
+            key={row.key}
+            item={row.item}
+            checked={selectedIds.has(row.item.id)}
+            onToggleItem={onToggleItem}
+          />
+        ),
+      )}
+    </Box>
+  );
+}
+
+function GroupHeaderRow({
+  row,
+}: {
+  row: Extract<DetailListRow, { kind: "group-header" }>;
+}) {
+  return (
+    <Box
+      style={{
+        height: DETAIL_GROUP_HEADER_HEIGHT,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 12px",
+        background: glass.bgStrong,
+      }}
+    >
+      <Text fw={600} size="sm" lineClamp={1}>
+        {row.label} · {row.count} 项 · {formatBytes(row.totalBytes)}
+      </Text>
+    </Box>
+  );
+}
+
+const ItemRow = memo(function ItemRow({
+  item,
+  checked,
+  onToggleItem,
+}: {
+  item: ScanItem;
+  checked: boolean;
+  onToggleItem: (itemId: string, checked: boolean) => void;
+}) {
+  const name = basename(item.path);
+
+  return (
+    <Box
+      style={{
+        height: DETAIL_ITEM_ROW_HEIGHT,
+        display: "grid",
+        gridTemplateColumns: GRID_COLUMNS,
+        alignItems: "center",
+        padding: "0 12px",
+        borderBottom: `1px solid ${glass.border}`,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "rgba(255, 255, 255, 0.04)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+      }}
+    >
+      <Checkbox
+        checked={checked}
+        disabled={!item.deletable}
+        onChange={(event) =>
+          onToggleItem(item.id, event.currentTarget.checked)
+        }
+        aria-label={name}
+      />
+      <Text size="sm" lineClamp={1} title={item.path}>
+        {name}
+      </Text>
+      <Text size="sm">{item.sizeHuman}</Text>
+      <Text size="sm" c="dimmed" lineClamp={1}>
+        {itemTypeLabel(item)}
+      </Text>
+      {item.deletable ? (
+        <Button
+          size="xs"
+          variant="subtle"
+          onClick={() => void revealInFinder(item.path).catch(console.error)}
+        >
+          在 Finder 中显示
+        </Button>
+      ) : (
+        <Text size="sm" c="orange">
+          受保护
+        </Text>
+      )}
+    </Box>
+  );
+});
+
+function itemTypeLabel(item: ScanItem) {
+  if (item.fileCategory) {
+    return item.fileCategory;
+  }
+  if (!item.deletable) {
+    return "Docker/VM";
+  }
+  return "—";
+}
+
+function basename(path: string) {
+  const parts = path.split("/");
+  return parts[parts.length - 1] || path;
+}

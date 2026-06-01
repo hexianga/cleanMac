@@ -9,6 +9,7 @@ pub struct PermissionStatus {
     pub ok: bool,
     pub needs_full_disk_access: bool,
     pub needs_trash_access: bool,
+    pub needs_downloads_access: bool,
 }
 
 pub fn check_permissions() -> PermissionStatus {
@@ -28,10 +29,18 @@ pub fn check_permissions() -> PermissionStatus {
         Err(_) => false,
     };
 
+    let downloads_path = home.join("Downloads");
+    let needs_downloads_access = match std::fs::read_dir(&downloads_path) {
+        Ok(_) => false,
+        Err(error) if error.kind() == ErrorKind::PermissionDenied => true,
+        Err(_) => false,
+    };
+
     PermissionStatus {
-        ok: !needs_full_disk_access,
+        ok: !needs_full_disk_access && !needs_downloads_access,
         needs_full_disk_access,
         needs_trash_access,
+        needs_downloads_access,
     }
 }
 
@@ -40,9 +49,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ok_and_needs_full_disk_access_are_opposites() {
+    fn ok_when_no_full_disk_or_downloads_blockers() {
         let status = check_permissions();
-        assert_eq!(status.ok, !status.needs_full_disk_access);
+        assert_eq!(
+            status.ok,
+            !status.needs_full_disk_access && !status.needs_downloads_access
+        );
     }
 
     #[test]
@@ -51,5 +63,6 @@ mod tests {
         let json = serde_json::to_value(&status).expect("serialize PermissionStatus");
         assert!(json.get("needsTrashAccess").is_some());
         assert!(json.get("needsFullDiskAccess").is_some());
+        assert!(json.get("needsDownloadsAccess").is_some());
     }
 }

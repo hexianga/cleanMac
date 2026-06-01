@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -228,14 +228,12 @@ pub fn delete_items(
     let selected: HashSet<String> = item_ids.into_iter().collect();
     let mut trash_items: Vec<ScanItem> = Vec::new();
     let mut other_items: Vec<ScanItem> = Vec::new();
-    let scan_snapshot: Vec<ScanCategoryResult>;
 
     {
         let results = state.scan_results.lock().map_err(|e| e.to_string())?;
         let results = results
             .as_ref()
             .ok_or_else(|| "没有可用的扫描结果".to_string())?;
-        scan_snapshot = results.clone();
 
         for category in results {
             for item in &category.items {
@@ -249,8 +247,6 @@ pub fn delete_items(
             }
         }
     }
-
-    validate_duplicate_keepers(&scan_snapshot, &selected)?;
 
     let home = ScanContext::new()?.home;
     let mut delete_results = Vec::new();
@@ -336,36 +332,6 @@ fn delete_blocked_reason(item: &ScanItem, home: &Path) -> Option<String> {
         return Some("受保护路径，无法删除".into());
     }
     None
-}
-
-fn validate_duplicate_keepers(
-    categories: &[ScanCategoryResult],
-    selected: &HashSet<String>,
-) -> Result<(), String> {
-    let mut groups: HashMap<String, Vec<&ScanItem>> = HashMap::new();
-
-    for category in categories {
-        if category.scanner_id != "duplicates" {
-            continue;
-        }
-        for item in &category.items {
-            let group_key = item.group_id.clone().unwrap_or_else(|| item.id.clone());
-            groups.entry(group_key).or_default().push(item);
-        }
-    }
-
-    for items in groups.values() {
-        let has_selected = items.iter().any(|item| selected.contains(&item.id));
-        if !has_selected {
-            continue;
-        }
-        let all_selected = items.iter().all(|item| selected.contains(&item.id));
-        if all_selected {
-            return Err("重复文件每组至少保留一个副本".into());
-        }
-    }
-
-    Ok(())
 }
 
 fn delete_one(item: &ScanItem) -> DeleteResultItem {
@@ -477,55 +443,3 @@ mod merge_tests {
     }
 }
 
-#[cfg(test)]
-mod delete_validation_tests {
-    use std::collections::HashSet;
-
-    use super::validate_duplicate_keepers;
-    use crate::model::{SafetyLevel, ScanCategoryResult, ScanItem};
-
-    fn dup_item(id: &str, group_id: &str) -> ScanItem {
-        ScanItem {
-            id: id.into(),
-            scanner_id: "duplicates".into(),
-            path: format!("/tmp/{id}"),
-            size_bytes: 1,
-            size_human: "1 B".into(),
-            logical_size_bytes: None,
-            logical_size_human: None,
-            file_category: None,
-            safety_level: SafetyLevel::Safe,
-            selected_by_default: false,
-            group_id: Some(group_id.into()),
-            deletable: true,
-        }
-    }
-
-    #[test]
-    fn duplicate_delete_requires_keeper_in_group() {
-        let categories = vec![ScanCategoryResult {
-            scanner_id: "duplicates".into(),
-            name: "重复文件".into(),
-            safety_level: SafetyLevel::Safe,
-            items: vec![dup_item("a", "g1"), dup_item("b", "g1")],
-            total_bytes: 2,
-            warnings: vec![],
-        }];
-        let selected: HashSet<String> = ["a".into(), "b".into()].into_iter().collect();
-        assert!(validate_duplicate_keepers(&categories, &selected).is_err());
-    }
-
-    #[test]
-    fn duplicate_delete_allows_when_keeper_remains() {
-        let categories = vec![ScanCategoryResult {
-            scanner_id: "duplicates".into(),
-            name: "重复文件".into(),
-            safety_level: SafetyLevel::Safe,
-            items: vec![dup_item("a", "g1"), dup_item("b", "g1")],
-            total_bytes: 2,
-            warnings: vec![],
-        }];
-        let selected: HashSet<String> = ["b".into()].into_iter().collect();
-        assert!(validate_duplicate_keepers(&categories, &selected).is_ok());
-    }
-}

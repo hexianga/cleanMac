@@ -1,9 +1,6 @@
 export interface AppSettings {
   largeFileMinBytes: number;
-  duplicateMinBytes: number;
   includeNodeModules: boolean;
-  scanDuplicates: boolean;
-  maxHashBytes: number;
   oneClickScanIds: string[];
 }
 
@@ -66,4 +63,5 @@ export interface PermissionStatus {
   ok: boolean;
   needsFullDiskAccess: boolean;
   needsTrashAccess: boolean;
+  needsDownloadsAccess: boolean;
 }

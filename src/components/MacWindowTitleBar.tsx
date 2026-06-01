@@ -1,4 +1,5 @@
 import { Box, Text } from "@mantine/core";
+import { APP_DISPLAY_NAME } from "../lib/appIdentity";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useRef, type MouseEvent } from "react";
 
@@ -77,7 +78,7 @@ export function MacWindowTitleBar() {
           ...noSelectStyle,
         }}
       >
-        磁盘助手
+        {APP_DISPLAY_NAME}
       </Text>
     </Box>
   );

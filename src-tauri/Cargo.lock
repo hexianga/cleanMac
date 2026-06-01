@@ -492,6 +492,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "cleanmac-desktop"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "dirs",
+ "libc",
+ "rayon",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "tempfile",
+ "trash",
+]
+
+[[package]]
 name = "combine"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -781,23 +798,6 @@ dependencies = [
  "option-ext",
  "redox_users",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "disk-cleaner-desktop"
-version = "0.1.0"
-dependencies = [
- "blake3",
- "dirs",
- "libc",
- "rayon",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "tempfile",
- "trash",
 ]
 
 [[package]]

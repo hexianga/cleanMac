@@ -1,3 +1,4 @@
+use crate::app_identity;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -6,11 +7,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 static LOG_PATH_OVERRIDE: Mutex<Option<PathBuf>> = Mutex::new(None);
 
-/// Production log: `~/Library/Logs/磁盘助手/operations.log`
+/// Production log: `~/Library/Logs/CleanMac/operations.log`
 pub fn default_operations_log_path() -> Option<PathBuf> {
-    dirs::home_dir().map(|home| {
-        home.join("Library/Logs/磁盘助手/operations.log")
-    })
+    app_identity::operations_log_path()
 }
 
 fn resolve_log_path() -> Option<PathBuf> {

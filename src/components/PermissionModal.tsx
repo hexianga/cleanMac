@@ -1,6 +1,6 @@
 import { Button, Group, Modal, Stack, Text } from "@mantine/core";
 import { openFullDiskAccessSettings } from "../lib/api";
-import { diskCleanerModalProps } from "../lib/diskCleanerModalProps";
+import { cleanMacModalProps } from "../lib/cleanMacModalProps";
 import {
   PERMISSION_COPY,
   type PermissionCopyVariant,
@@ -20,7 +20,7 @@ export function PermissionModal({
   const { title, body } = PERMISSION_COPY[variant];
 
   return (
-    <Modal opened={opened} onClose={onClose} title={title} {...diskCleanerModalProps}>
+    <Modal opened={opened} onClose={onClose} title={title} {...cleanMacModalProps}>
       <Stack gap="md">
         <Text size="sm" c="dimmed">
           {body}

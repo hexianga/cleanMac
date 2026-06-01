@@ -1,5 +1,5 @@
 import { Button, Group, Modal, Stack, Text } from "@mantine/core";
-import { diskCleanerModalProps } from "../lib/diskCleanerModalProps";
+import { cleanMacModalProps } from "../lib/cleanMacModalProps";
 import type { SlowScanConfirmCopy } from "../lib/slowScanConfirmCopy";
 
 interface ScanConfirmModalProps {
@@ -16,7 +16,7 @@ export function ScanConfirmModal({
   copy,
 }: ScanConfirmModalProps) {
   return (
-    <Modal opened={opened} onClose={onClose} title={copy.title} {...diskCleanerModalProps}>
+    <Modal opened={opened} onClose={onClose} title={copy.title} {...cleanMacModalProps}>
       <Stack gap="md">
         <Text size="sm" c="dimmed">
           {copy.body}

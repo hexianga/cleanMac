@@ -1,7 +1,7 @@
 [package]
-name = "disk-cleaner-desktop"
+name = "cleanmac-desktop"
 version = "0.1.0"
-description = "磁盘助手 macOS 桌面客户端"
+description = "CleanMac macOS 桌面客户端"
 authors = ["canglang"]
 edition = "2021"
 rust-version = "1.77.2"

@@ -1,4 +1,9 @@
-import { SCANNER_ORDER, type ScannerId } from "./categoryMeta";
+import { ALL_SCANNER_IDS, type ScannerId } from "./categoryMeta";
+import {
+  isApplicationsPermissionWarning,
+  isDownloadsPermissionWarning,
+  isTrashPermissionWarning,
+} from "./permissionWarnings";
 import type {
   CategoryScanState,
   PermissionStatus,
@@ -7,12 +12,24 @@ import type {
 
 export function initialScanState(): Record<ScannerId, CategoryScanState> {
   return Object.fromEntries(
-    SCANNER_ORDER.map((id) => [id, "unscanned" as CategoryScanState]),
+    ALL_SCANNER_IDS.map((id) => [id, "unscanned" as CategoryScanState]),
   ) as Record<ScannerId, CategoryScanState>;
 }
 
-function isTrashPermissionWarning(warnings: string[]) {
-  return warnings.some((w) => w.includes("无法读取"));
+function needsPermissionFromWarnings(
+  scannerId: ScannerId,
+  warnings: string[],
+): boolean {
+  switch (scannerId) {
+    case "trash":
+      return isTrashPermissionWarning(warnings);
+    case "downloads":
+      return isDownloadsPermissionWarning(warnings);
+    case "applications":
+      return isApplicationsPermissionWarning(warnings);
+    default:
+      return false;
+  }
 }
 
 export function scanStateAfterResult(
@@ -23,10 +40,13 @@ export function scanStateAfterResult(
   if (scannerId === "trash" && permissions?.needsTrashAccess) {
     return "needs_permission";
   }
+  if (scannerId === "downloads" && permissions?.needsDownloadsAccess) {
+    return "needs_permission";
+  }
   if (!category) {
     return "error";
   }
-  if (scannerId === "trash" && isTrashPermissionWarning(category.warnings)) {
+  if (needsPermissionFromWarnings(scannerId, category.warnings)) {
     return "needs_permission";
   }
   if (category.items.length === 0 && category.warnings.length > 0) {

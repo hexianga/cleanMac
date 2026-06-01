@@ -1,20 +1,16 @@
 import {
+  Alert,
+  Box,
   Button,
-  Checkbox,
   Group,
-  Radio,
-  ScrollArea,
-  Stack,
-  Table,
   Text,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
-import { useMemo, type ReactNode } from "react";
-import { revealInFinder } from "../lib/api";
-import { glass } from "../lib/diskCleanerTheme";
+import { useEffect, useState } from "react";
+import { cacheDeleteHint } from "../lib/cacheImpactCopy";
 import { formatBytes } from "../lib/formatBytes";
-import { groupItemsForCategory } from "../lib/groupScanItems";
-import type { ScanCategoryResult, ScanItem } from "../lib/types";
+import type { ScanCategoryResult } from "../lib/types";
+import { DetailItemList } from "./DetailItemList";
 
 interface CategoryDetailViewProps {
   category: ScanCategoryResult;
@@ -23,10 +19,6 @@ interface CategoryDetailViewProps {
   onToggleItem: (itemId: string, checked: boolean) => void;
   onSelectAllDeletable: () => void;
   onDeselectAllInCategory: () => void;
-  onSetDuplicateKeeper: (
-    groupItemIds: string[],
-    keeperId: string,
-  ) => void;
 }
 
 export function CategoryDetailView({
@@ -36,30 +28,50 @@ export function CategoryDetailView({
   onToggleItem,
   onSelectAllDeletable,
   onDeselectAllInCategory,
-  onSetDuplicateKeeper,
 }: CategoryDetailViewProps) {
-  const isDuplicates = category.scannerId === "duplicates";
+  const isCacheCategory =
+    category.scannerId === "app_caches" || category.scannerId === "dev_caches";
+  const [cacheAlertDismissed, setCacheAlertDismissed] = useState(false);
 
-  const groups = useMemo(
-    () => groupItemsForCategory(category.scannerId, category.items),
-    [category.scannerId, category.items],
-  );
+  useEffect(() => {
+    setCacheAlertDismissed(false);
+  }, [category.scannerId]);
+
+  const cacheHint = cacheDeleteHint(category.scannerId);
 
   return (
-    <Stack gap="md" h="100%">
-      <Group justify="space-between" align="center">
+    <Box
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--mantine-spacing-md)",
+      }}
+    >
+      <Group justify="space-between" align="center" wrap="nowrap">
         <Button
           variant="subtle"
           leftSection={<IconArrowLeft size={16} />}
           onClick={onBack}
+          style={{ flexShrink: 0 }}
         >
           返回
         </Button>
-        <Text fw={600} size="lg">
+        <Text fw={600} size="lg" lineClamp={1} style={{ flex: 1, textAlign: "center" }}>
           {category.name}
         </Text>
-        <div style={{ width: 72 }} />
+        <div style={{ width: 72, flexShrink: 0 }} aria-hidden />
       </Group>
+
+      {isCacheCategory && !cacheAlertDismissed && cacheHint ? (
+        <Alert
+          variant="light"
+          color="yellow"
+          withCloseButton
+          onClose={() => setCacheAlertDismissed(true)}
+        >
+          {cacheHint}
+        </Alert>
+      ) : null}
 
       <Text size="sm" c="dimmed">
         {category.items.length} 项，磁盘占用合计 {formatBytes(category.totalBytes)}
@@ -74,189 +86,12 @@ export function CategoryDetailView({
         </Button>
       </Group>
 
-      <ScrollArea flex={1} type="auto" offsetScrollbars>
-        <Table highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th w={40} />
-              <Table.Th>文件名</Table.Th>
-              <Table.Th w={100}>大小</Table.Th>
-              <Table.Th w={120}>类型</Table.Th>
-              <Table.Th w={140}>操作</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {groups.flatMap((group) => {
-              const rows: ReactNode[] = [
-                <Table.Tr
-                  key={`h-${group.groupKey}`}
-                  style={{ background: glass.bgStrong }}
-                >
-                  <Table.Td colSpan={5}>
-                    <Text fw={600} size="sm">
-                      {group.groupLabel} · {group.items.length} 项 ·{" "}
-                      {formatBytes(group.totalBytes)}
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>,
-              ];
-
-              if (isDuplicates) {
-                const groupItemIds = group.items.map((item) => item.id);
-                const keeperId =
-                  group.items.find((item) => !selectedIds.has(item.id))?.id ??
-                  group.items[0]?.id ??
-                  "";
-
-                rows.push(
-                  ...group.items.map((item) => (
-                    <DuplicateItemRow
-                      key={item.id}
-                      item={item}
-                      groupLabel={group.groupLabel}
-                      keeperId={keeperId}
-                      groupItemIds={groupItemIds}
-                      onSetDuplicateKeeper={onSetDuplicateKeeper}
-                    />
-                  )),
-                );
-              } else {
-                rows.push(
-                  ...group.items.map((item) => (
-                    <ItemTableRow
-                      key={item.id}
-                      item={item}
-                      checked={selectedIds.has(item.id)}
-                      onToggleItem={onToggleItem}
-                    />
-                  )),
-                );
-              }
-
-              return rows;
-            })}
-          </Table.Tbody>
-        </Table>
-      </ScrollArea>
-    </Stack>
+      <DetailItemList
+        scannerId={category.scannerId}
+        items={category.items}
+        selectedIds={selectedIds}
+        onToggleItem={onToggleItem}
+      />
+    </Box>
   );
-}
-
-function DuplicateItemRow({
-  item,
-  groupLabel,
-  keeperId,
-  groupItemIds,
-  onSetDuplicateKeeper,
-}: {
-  item: ScanItem;
-  groupLabel: string;
-  keeperId: string;
-  groupItemIds: string[];
-  onSetDuplicateKeeper: (
-    groupItemIds: string[],
-    keeperId: string,
-  ) => void;
-}) {
-  return (
-    <Table.Tr>
-      <Table.Td>
-        <Radio
-          checked={keeperId === item.id}
-          onChange={() => onSetDuplicateKeeper(groupItemIds, item.id)}
-          aria-label="保留此文件"
-        />
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm" lineClamp={1} title={item.path}>
-          {basename(item.path)}
-        </Text>
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm">{item.sizeHuman}</Text>
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm" c="dimmed">
-          {groupLabel}
-        </Text>
-      </Table.Td>
-      <Table.Td>
-        <FinderAction item={item} />
-      </Table.Td>
-    </Table.Tr>
-  );
-}
-
-function ItemTableRow({
-  item,
-  checked,
-  onToggleItem,
-}: {
-  item: ScanItem;
-  checked: boolean;
-  onToggleItem: (itemId: string, checked: boolean) => void;
-}) {
-  return (
-    <Table.Tr>
-      <Table.Td>
-        <Checkbox
-          checked={checked}
-          disabled={!item.deletable}
-          onChange={(event) =>
-            onToggleItem(item.id, event.currentTarget.checked)
-          }
-          aria-label={basename(item.path)}
-        />
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm" lineClamp={1} title={item.path}>
-          {basename(item.path)}
-        </Text>
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm">{item.sizeHuman}</Text>
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm" c="dimmed">
-          {itemTypeLabel(item)}
-        </Text>
-      </Table.Td>
-      <Table.Td>
-        {item.deletable ? (
-          <FinderAction item={item} />
-        ) : (
-          <Text size="sm" c="orange">
-            受保护
-          </Text>
-        )}
-      </Table.Td>
-    </Table.Tr>
-  );
-}
-
-function FinderAction({ item }: { item: ScanItem }) {
-  return (
-    <Button
-      size="xs"
-      variant="subtle"
-      onClick={() => void revealInFinder(item.path).catch(console.error)}
-    >
-      在 Finder 中显示
-    </Button>
-  );
-}
-
-function itemTypeLabel(item: ScanItem) {
-  if (item.fileCategory) {
-    return item.fileCategory;
-  }
-  if (!item.deletable) {
-    return "Docker/VM";
-  }
-  return "—";
-}
-
-function basename(path: string) {
-  const parts = path.split("/");
-  return parts[parts.length - 1] || path;
 }

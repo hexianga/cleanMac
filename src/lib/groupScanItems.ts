@@ -27,20 +27,6 @@ export function groupItemsForCategory(
       .sort((a, b) => b.totalBytes - a.totalBytes);
   }
 
-  if (scannerId === "duplicates") {
-    const map = new Map<string, ScanItem[]>();
-    for (const item of items) {
-      const key = item.groupId ?? item.id;
-      map.set(key, [...(map.get(key) ?? []), item]);
-    }
-    return [...map.entries()].map(([key, groupItems], index) => ({
-      groupKey: key,
-      groupLabel: `重复组 ${index + 1}`,
-      items: groupItems,
-      totalBytes: groupItems.reduce((s, i) => s + i.sizeBytes, 0),
-    }));
-  }
-
   if (scannerId === "app_caches") {
     const map = new Map<string, ScanItem[]>();
     for (const item of items) {
@@ -77,8 +63,14 @@ export function groupItemsForCategory(
 
   const labels: Record<string, string> = {
     downloads: "下载残留",
+    applications: "应用程序",
     logs: "日志与诊断",
     trash: "废纸篓",
+    file_video: "视频",
+    file_audio: "音频",
+    file_image: "图片",
+    file_pdf: "PDF",
+    file_office: "Office",
   };
   const label = labels[scannerId] ?? scannerId;
   return [

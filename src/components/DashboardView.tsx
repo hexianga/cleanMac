@@ -1,15 +1,39 @@
-import { Grid, Stack } from "@mantine/core";
-import { mergeCategories, SCANNER_ORDER, type ScannerId } from "../lib/categoryMeta";
-import type { CategoryScanState, DiskOverview, ScanCategoryResult, ScanProgress } from "../lib/types";
+import { Box, Grid, ScrollArea, Stack } from "@mantine/core";
+import { useState } from "react";
+import {
+  CLASSIFICATION_SCANNER_ORDER,
+  FILE_TYPE_SCANNER_ORDER,
+  mergeCategories,
+  type ScannerId,
+} from "../lib/categoryMeta";
+import type { HomeTab } from "../lib/homeTab";
+import type {
+  CategoryScanState,
+  DiskOverview,
+  ScanCategoryResult,
+} from "../lib/types";
+import { CacheImpactModal } from "./CacheImpactModal";
 import { CategoryCard } from "./CategoryCard";
 import { DashboardHeader } from "./DashboardHeader";
-import { DashboardToolbar } from "./DashboardToolbar";
+
+/** Room below last card row for hover box-shadow (0 8px 24px) inside ScrollArea */
+const DASHBOARD_GRID_SHADOW_PADDING_PX = 32;
+
+const scrollAreaStyles = {
+  root: {
+    flex: 1,
+    minHeight: 0,
+  },
+  viewport: {
+    scrollbarGutter: "stable",
+  },
+};
 
 interface DashboardViewProps {
+  activeHomeTab: HomeTab;
   disk: DiskOverview | null;
   categories: ScanCategoryResult[];
   scanState: Record<ScannerId, CategoryScanState>;
-  scanProgressByCategory: Partial<Record<ScannerId, ScanProgress>>;
   selectedIdsByCategory: Record<ScannerId, Set<string>>;
   onOpenCategory: (scannerId: ScannerId) => void;
   onScanCategory: (scannerId: ScannerId) => void;
@@ -17,18 +41,26 @@ interface DashboardViewProps {
   onOpenSettings: () => void;
 }
 
-export function DashboardView({
-  disk,
+interface CardGridProps {
+  scannerOrder: readonly ScannerId[];
+  categories: ScanCategoryResult[];
+  scanState: Record<ScannerId, CategoryScanState>;
+  selectedIdsByCategory: Record<ScannerId, Set<string>>;
+  onOpenCategory: (scannerId: ScannerId) => void;
+  onScanCategory: (scannerId: ScannerId) => void;
+  onShowCacheImpact: (scannerId: "app_caches" | "dev_caches") => void;
+}
+
+function CategoryCardGrid({
+  scannerOrder,
   categories,
   scanState,
-  scanProgressByCategory,
   selectedIdsByCategory,
   onOpenCategory,
   onScanCategory,
-  onScanAll,
-  onOpenSettings,
-}: DashboardViewProps) {
-  const merged = mergeCategories(categories);
+  onShowCacheImpact,
+}: CardGridProps) {
+  const merged = mergeCategories(categories, scannerOrder);
   const categoryById = new Map(merged.map((c) => [c.scannerId, c]));
 
   const selectedCountInCategory = (scannerId: ScannerId) => {
@@ -40,36 +72,115 @@ export function DashboardView({
     return category.items.filter((item) => ids.has(item.id)).length;
   };
 
-  const anyScanning = SCANNER_ORDER.some((id) => scanState[id] === "scanning");
+  return (
+    <Grid gutter="md" align="stretch" w="100%">
+      {scannerOrder.map((scannerId) => (
+        <Grid.Col
+          key={scannerId}
+          span={{ base: 12, sm: 6, md: 3 }}
+          style={{ display: "flex", minWidth: 0 }}
+        >
+          <CategoryCard
+            scannerId={scannerId}
+            category={categoryById.get(scannerId) ?? null}
+            scanState={scanState[scannerId]}
+            selectedCount={selectedCountInCategory(scannerId)}
+            onScan={onScanCategory}
+            onOpen={onOpenCategory}
+            onShowCacheImpact={
+              scannerId === "app_caches" || scannerId === "dev_caches"
+                ? () => onShowCacheImpact(scannerId)
+                : undefined
+            }
+          />
+        </Grid.Col>
+      ))}
+    </Grid>
+  );
+}
+
+export function DashboardView({
+  activeHomeTab,
+  disk,
+  categories,
+  scanState,
+  selectedIdsByCategory,
+  onOpenCategory,
+  onScanCategory,
+  onScanAll,
+  onOpenSettings,
+}: DashboardViewProps) {
+  const [cacheImpactId, setCacheImpactId] = useState<
+    "app_caches" | "dev_caches" | null
+  >(null);
+
+  const anyClassScanning = CLASSIFICATION_SCANNER_ORDER.some(
+    (id) => scanState[id] === "scanning",
+  );
+  const anyFileTypeScanning = FILE_TYPE_SCANNER_ORDER.some(
+    (id) => scanState[id] === "scanning",
+  );
+
+  const gridProps = {
+    categories,
+    scanState,
+    selectedIdsByCategory,
+    onOpenCategory,
+    onScanCategory,
+    onShowCacheImpact: (id: "app_caches" | "dev_caches") => setCacheImpactId(id),
+  };
 
   return (
-    <Stack gap="md">
-      {disk ? <DashboardHeader disk={disk} /> : null}
-      <DashboardToolbar
-        scanning={anyScanning}
-        onOpenSettings={onOpenSettings}
-        onScanAll={onScanAll}
-      />
+    <Stack gap="md" style={{ flex: 1, minHeight: 0, width: "100%" }}>
+      {disk ? (
+        <DashboardHeader
+          disk={disk}
+          scanning={
+            activeHomeTab === "classification"
+              ? anyClassScanning
+              : anyFileTypeScanning
+          }
+          onScanAll={onScanAll}
+          onOpenSettings={onOpenSettings}
+        />
+      ) : null}
 
-      <Grid gutter="md" align="stretch">
-        {SCANNER_ORDER.map((scannerId) => (
-          <Grid.Col
-            key={scannerId}
-            span={{ base: 12, sm: 6, md: 3 }}
-            style={{ display: "flex", minWidth: 0 }}
+      <ScrollArea
+        flex={1}
+        type="auto"
+        offsetScrollbars
+        scrollbars="y"
+        styles={scrollAreaStyles}
+        style={{ minHeight: 0, width: "100%" }}
+      >
+        <Box style={{ paddingBottom: DASHBOARD_GRID_SHADOW_PADDING_PX }}>
+          <Box
+            style={{
+              display: activeHomeTab === "classification" ? "block" : "none",
+            }}
           >
-            <CategoryCard
-              scannerId={scannerId}
-              category={categoryById.get(scannerId) ?? null}
-              scanState={scanState[scannerId]}
-              scanProgress={scanProgressByCategory[scannerId]}
-              selectedCount={selectedCountInCategory(scannerId)}
-              onScan={onScanCategory}
-              onOpen={onOpenCategory}
+            <CategoryCardGrid
+              scannerOrder={CLASSIFICATION_SCANNER_ORDER}
+              {...gridProps}
             />
-          </Grid.Col>
-        ))}
-      </Grid>
+          </Box>
+          <Box
+            style={{
+              display: activeHomeTab === "file_type" ? "block" : "none",
+            }}
+          >
+            <CategoryCardGrid
+              scannerOrder={FILE_TYPE_SCANNER_ORDER}
+              {...gridProps}
+            />
+          </Box>
+        </Box>
+      </ScrollArea>
+
+      <CacheImpactModal
+        scannerId={cacheImpactId}
+        onClose={() => setCacheImpactId(null)}
+      />
     </Stack>
   );
 }

@@ -17,6 +17,7 @@ interface DeleteConfirmModalProps {
   confirming: boolean;
   categoryName: string;
   groups: ItemGroup[];
+  extraWarning?: string;
 }
 
 export function DeleteConfirmModal({
@@ -26,6 +27,7 @@ export function DeleteConfirmModal({
   confirming,
   categoryName,
   groups,
+  extraWarning,
 }: DeleteConfirmModalProps) {
   const itemCount = groups.reduce((sum, group) => sum + group.items.length, 0);
   const totalBytes = groups.reduce((sum, group) => sum + group.totalBytes, 0);
@@ -48,6 +50,11 @@ export function DeleteConfirmModal({
           将释放约 {formatBytes(totalBytes)}。文件将移至废纸篓（废纸篓类别为清空废纸篓），可在
           Finder 中恢复。
         </Text>
+        {extraWarning ? (
+          <Text size="sm" c="orange">
+            {extraWarning}
+          </Text>
+        ) : null}
 
         <Accordion variant="separated">
           {groups.map((group) => (

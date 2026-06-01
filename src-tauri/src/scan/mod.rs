@@ -1,7 +1,8 @@
 pub mod app_caches;
+pub mod applications;
 pub mod dev_caches;
 pub mod downloads;
-pub mod duplicates;
+pub mod file_types;
 pub mod large_files;
 pub mod logs;
 pub mod trash;
@@ -83,12 +84,17 @@ impl ScanOrchestrator {
         Self {
             scanners: vec![
                 Box::new(large_files::LargeFilesScanner),
-                Box::new(duplicates::DuplicatesScanner),
                 Box::new(downloads::DownloadsScanner),
                 Box::new(app_caches::AppCachesScanner),
+                Box::new(applications::ApplicationsScanner),
                 Box::new(dev_caches::DevCachesScanner),
                 Box::new(logs::LogsScanner),
                 Box::new(trash::TrashScanner),
+                Box::new(file_types::FileVideoScanner),
+                Box::new(file_types::FileAudioScanner),
+                Box::new(file_types::FileImageScanner),
+                Box::new(file_types::FilePdfScanner),
+                Box::new(file_types::FileOfficeScanner),
             ],
         }
     }

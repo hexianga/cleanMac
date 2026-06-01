@@ -8,16 +8,22 @@ export const glass = {
   footerBg: "rgba(15, 23, 42, 0.72)",
 } as const;
 
-export const diskCleanerTheme: MantineThemeOverride = createTheme({
+export const cleanMacTheme: MantineThemeOverride = createTheme({
   primaryColor: "indigo",
   defaultRadius: "md",
   activeClassName: "",
   components: {
     AppShell: {
       styles: {
-        footer: {
+        navbar: {
           backgroundColor: "transparent",
           border: "none",
+        },
+        footer: {
+          backgroundColor: glass.footerBg,
+          backdropFilter: glass.blur,
+          border: "none",
+          padding: 0,
         },
         main: {
           backgroundColor: "transparent",

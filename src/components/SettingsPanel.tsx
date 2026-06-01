@@ -13,12 +13,15 @@ import {
 import { IconInfoCircle } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import {
+  CLASSIFICATION_SCANNER_ORDER,
   DEFAULT_ONE_CLICK_SCAN_IDS,
   SCANNER_META,
-  SCANNER_ORDER,
+  isClassificationScannerId,
 } from "../lib/categoryMeta";
 import { getSettings, saveSettings } from "../lib/api";
+import { cleanMacModalProps } from "../lib/cleanMacModalProps";
 import type { AppSettings } from "../lib/types";
+import { SettingsFieldRow } from "./SettingsFieldRow";
 
 const MB = 1024 * 1024;
 
@@ -42,10 +45,11 @@ function FieldLabel({ label, tooltip }: { label: string; tooltip: string }) {
 }
 
 function normalizeSettings(raw: AppSettings): AppSettings {
-  const oneClickScanIds =
+  const oneClickScanIds = (
     raw.oneClickScanIds?.length > 0
       ? raw.oneClickScanIds
-      : [...DEFAULT_ONE_CLICK_SCAN_IDS];
+      : [...DEFAULT_ONE_CLICK_SCAN_IDS]
+  ).filter(isClassificationScannerId);
   return { ...raw, oneClickScanIds };
 }
 
@@ -58,7 +62,6 @@ interface SettingsPanelProps {
 export function SettingsPanel({ opened, onClose, onSaved }: SettingsPanelProps) {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,7 +69,6 @@ export function SettingsPanel({ opened, onClose, onSaved }: SettingsPanelProps) 
       return;
     }
 
-    setSaved(false);
     setError(null);
     getSettings()
       .then((loaded) => setSettings(normalizeSettings(loaded)))
@@ -85,11 +87,10 @@ export function SettingsPanel({ opened, onClose, onSaved }: SettingsPanelProps) 
 
     setSaving(true);
     setError(null);
-    setSaved(false);
     try {
       await saveSettings(settings);
-      setSaved(true);
       onSaved?.(settings);
+      onClose();
     } catch (saveError) {
       setError(String(saveError));
     } finally {
@@ -99,11 +100,13 @@ export function SettingsPanel({ opened, onClose, onSaved }: SettingsPanelProps) 
 
   return (
     <Modal
+      {...cleanMacModalProps}
       opened={opened}
       onClose={onClose}
       title="扫描设置"
-      centered
-      withCloseButton={false}
+      size="lg"
+      autoFocus={false}
+      withCloseButton
     >
       {!settings ? (
         <Text c="dimmed" size="sm">
@@ -112,104 +115,55 @@ export function SettingsPanel({ opened, onClose, onSaved }: SettingsPanelProps) 
       ) : (
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            以下参数对单类扫描与一键扫描均生效。
+            以下参数对单类扫描与一键扫描均生效。「文件类型」Tab 的一键扫描固定包含全部 5 类。
           </Text>
-          <NumberInput
+          <SettingsFieldRow
             label={
               <FieldLabel
                 label="大文件阈值（MB）"
                 tooltip="超过此大小的文件会出现在「大文件」类别"
               />
             }
-            min={1}
-            data-autofocus
-            value={Math.round(settings.largeFileMinBytes / MB)}
-            onChange={(value) => {
-              const mb = typeof value === "number" ? value : 100;
-              setSettings({
-                ...settings,
-                largeFileMinBytes: mb * MB,
-              });
-              setSaved(false);
-            }}
-          />
-          <NumberInput
-            label={
-              <FieldLabel
-                label="重复文件最小大小（MB）"
-                tooltip="仅检测大于此大小的重复文件"
-              />
-            }
-            min={1}
-            decimalScale={2}
-            value={settings.duplicateMinBytes / MB}
-            onChange={(value) => {
-              const mb = typeof value === "number" ? value : 1;
-              setSettings({
-                ...settings,
-                duplicateMinBytes: Math.round(mb * MB),
-              });
-              setSaved(false);
-            }}
-          />
-          <Switch
-            label={
-              <FieldLabel
-                label="扫描重复文件"
-                tooltip="默认关闭；开启后会显著增加扫描时间"
-              />
-            }
-            checked={settings.scanDuplicates}
-            onChange={(event) => {
-              setSettings({
-                ...settings,
-                scanDuplicates: event.currentTarget.checked,
-              });
-              setSaved(false);
-            }}
-          />
-          <NumberInput
-            label={
-              <FieldLabel
-                label="重复文件哈希上限（MB）"
-                tooltip="逻辑大小超过此值的文件不参与重复检测（避免 Docker.raw 等巨型稀疏文件）"
-              />
-            }
-            min={1}
-            value={Math.round(settings.maxHashBytes / MB)}
-            onChange={(value) => {
-              const mb = typeof value === "number" ? value : 512;
-              setSettings({
-                ...settings,
-                maxHashBytes: mb * MB,
-              });
-              setSaved(false);
-            }}
-          />
-          <Switch
+          >
+            <NumberInput
+              w="100%"
+              min={1}
+              value={Math.round(settings.largeFileMinBytes / MB)}
+              onChange={(value) => {
+                const mb = typeof value === "number" ? value : 100;
+                setSettings({
+                  ...settings,
+                  largeFileMinBytes: mb * MB,
+                });
+              }}
+            />
+          </SettingsFieldRow>
+          <SettingsFieldRow
             label={
               <FieldLabel
                 label="扫描 node_modules 目录"
-                tooltip="默认跳过 node_modules 以加快扫描"
+                tooltip="默认跳过 node_modules 以加快扫描；开启后文件类型与大文件扫描也会进入 node_modules"
               />
             }
-            checked={settings.includeNodeModules}
-            onChange={(event) => {
-              setSettings({
-                ...settings,
-                includeNodeModules: event.currentTarget.checked,
-              });
-              setSaved(false);
-            }}
-          />
+          >
+            <Switch
+              checked={settings.includeNodeModules}
+              onChange={(event) => {
+                setSettings({
+                  ...settings,
+                  includeNodeModules: event.currentTarget.checked,
+                });
+              }}
+            />
+          </SettingsFieldRow>
 
           <Text fw={600} size="sm" mt="md">
-            一键扫描范围
+            一键扫描范围（文件分类）
           </Text>
           <Text size="sm" c="dimmed">
-            仅决定「一键扫描」包含哪些类别。点击单张卡片仍只扫描该类别。
+            仅决定「文件分类」Tab 的一键扫描包含哪些类别。点击单张卡片仍只扫描该类别。
           </Text>
-          {SCANNER_ORDER.map((id) => (
+          {CLASSIFICATION_SCANNER_ORDER.map((id) => (
             <Checkbox
               key={id}
               label={SCANNER_META[id].name}
@@ -219,16 +173,10 @@ export function SettingsPanel({ opened, onClose, onSaved }: SettingsPanelProps) 
                   ? [...settings.oneClickScanIds, id]
                   : settings.oneClickScanIds.filter((scannerId) => scannerId !== id);
                 setSettings({ ...settings, oneClickScanIds: next });
-                setSaved(false);
               }}
             />
           ))}
 
-          {saved && (
-            <Text c="teal" size="sm">
-              已保存，下次扫描生效
-            </Text>
-          )}
           {error && (
             <Text c="red" size="sm">
               {error}

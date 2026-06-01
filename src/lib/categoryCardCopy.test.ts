@@ -19,4 +19,15 @@ describe("categoryCardCopy", () => {
     expect(categoryCardMainValue("scanned", 1024)).toBe("1.0 KB");
     expect(categoryCardSubText("scanned", 3, "downloads")).toBe("3 项");
   });
+
+  it("hides size and shows placeholder copy while scanning", () => {
+    expect(categoryCardMainValue("scanning", 999)).toBeNull();
+    expect(categoryCardSubText("scanning", 99, "file_image")).toBe("扫描中…");
+  });
+
+  it("shows downloads permission copy", () => {
+    expect(categoryCardSubText("needs_permission", 0, "downloads")).toBe(
+      "无法读取「下载」文件夹，需完全磁盘访问权限",
+    );
+  });
 });

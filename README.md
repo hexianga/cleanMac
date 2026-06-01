@@ -1,8 +1,8 @@
-# CleanMac（磁盘助手）
+# CleanMac
 
 [English](#english) · [中文](#中文)
 
-macOS disk cleanup utility. Scans caches, logs, large files, duplicates, and more — **100% local**, no data uploaded.
+macOS disk cleanup utility. Scans caches, logs, large files, media by type, and more — **100% local**, no data uploaded.
 
 [![CI](https://github.com/hexianga/cleanMac/actions/workflows/ci.yml/badge.svg)](https://github.com/hexianga/cleanMac/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -13,10 +13,10 @@ Get the latest **macOS (Apple Silicon)** DMG from [GitHub Releases](https://gith
 
 ## Features
 
-- Large files, duplicate files, download leftovers
-- App caches, developer caches (Xcode, npm, etc.)
-- Logs & diagnostics, Trash
-- Per-category or one-click scan; review before delete
+- **文件分类:** download leftovers, Trash, applications (.app), app/dev caches, logs, large files
+- **文件类型:** video, audio, images, PDF, Office — scan by extension under home directory
+- Sidebar tabs; per-category or one-click scan; review before delete
+- Cache impact hints for app and developer caches
 
 ## Development
 
@@ -36,12 +36,19 @@ pnpm tauri:build
 
 Ad-hoc signing is configured by default (`signingIdentity: "-"`). For signed releases, see [CONTRIBUTING.md](CONTRIBUTING.md) and `.env.signing.example`.
 
+## Project layout
+
+| Directory | Role |
+|-----------|------|
+| `src/` | Web UI (React + Vite) |
+| `src-tauri/` | Tauri official Rust backend — scan, delete, settings, permissions (`tauri.conf.json` for bundle/window) |
+
 ## Project info
 
 | Item | Value |
 |------|-------|
-| App name (UI) | 磁盘助手 |
-| Bundle ID | `com.canglang.diskcleaner` |
+| App name (UI) | CleanMac |
+| Bundle ID | `com.canglang.cleanmac` |
 | License | MIT |
 
 ---
@@ -52,7 +59,7 @@ CleanMac is an open-source macOS app to find reclaimable disk space under your h
 
 ## 中文
 
-CleanMac（磁盘助手）是开源 macOS 磁盘清理工具，扫描主目录下的可清理项，勾选后移至废纸篓。纯本地运行，不上传任何数据。
+CleanMac 是开源 macOS 磁盘清理工具，扫描主目录下的可清理项，勾选后移至废纸篓。纯本地运行，不上传任何数据。若从旧版「磁盘助手」升级，设置会自动迁移；请在系统设置中为新应用重新授权完全磁盘访问。
 
 ```bash
 # 开发

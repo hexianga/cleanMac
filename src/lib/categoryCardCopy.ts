@@ -5,12 +5,8 @@ import type { CategoryScanState } from "./types";
 export function categoryCardMainValue(
   scanState: CategoryScanState,
   totalBytes: number,
-  scanProgressBytes?: number,
 ): string | null {
   if (scanState === "scanning") {
-    if (scanProgressBytes && scanProgressBytes > 0) {
-      return formatBytes(scanProgressBytes);
-    }
     return null;
   }
   if (
@@ -30,15 +26,21 @@ export function categoryCardSubText(
   scanState: CategoryScanState,
   itemCount: number,
   scannerId: ScannerId,
-  scanningLabel?: string,
 ): string {
   if (scanState === "scanning") {
-    return scanningLabel ?? "扫描中…";
+    return "扫描中…";
   }
   if (scanState === "needs_permission") {
-    return scannerId === "trash"
-      ? "无法读取废纸篓，需完全磁盘访问权限"
-      : "需要完全磁盘访问权限";
+    if (scannerId === "trash") {
+      return "无法读取废纸篓，需完全磁盘访问权限";
+    }
+    if (scannerId === "downloads") {
+      return "无法读取「下载」文件夹，需完全磁盘访问权限";
+    }
+    if (scannerId === "applications") {
+      return "无法读取 /Applications，需完全磁盘访问权限";
+    }
+    return "需要完全磁盘访问权限";
   }
   if (scanState === "error") {
     return "扫描失败";

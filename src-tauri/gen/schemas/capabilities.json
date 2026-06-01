@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"Default desktop capabilities for 磁盘助手","local":true,"windows":["main"],"permissions":["core:default","opener:default","core:window:allow-start-dragging","core:window:allow-toggle-maximize"]}}
+{"default":{"identifier":"default","description":"Default desktop capabilities for CleanMac","local":true,"windows":["main"],"permissions":["core:default","opener:default","core:window:allow-start-dragging","core:window:allow-toggle-maximize"]}}

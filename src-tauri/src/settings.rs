@@ -1,17 +1,11 @@
 use std::fs;
 use std::path::PathBuf;
 
+use crate::app_identity;
 use serde::{Deserialize, Serialize};
-
-const APP_NAME: &str = "磁盘助手";
-const SETTINGS_FILE: &str = "settings.json";
 
 fn default_large_file_min_bytes() -> u64 {
     104_857_600
-}
-
-fn default_duplicate_min_bytes() -> u64 {
-    1_048_576
 }
 
 fn default_one_click_scan_ids() -> Vec<String> {
@@ -29,38 +23,24 @@ fn default_one_click_scan_ids() -> Vec<String> {
 pub struct Settings {
     #[serde(default = "default_large_file_min_bytes")]
     pub large_file_min_bytes: u64,
-    #[serde(default = "default_duplicate_min_bytes")]
-    pub duplicate_min_bytes: u64,
     #[serde(default)]
     pub include_node_modules: bool,
-    #[serde(default)]
-    pub scan_duplicates: bool,
-    #[serde(default = "default_max_hash_bytes")]
-    pub max_hash_bytes: u64,
     #[serde(default = "default_one_click_scan_ids")]
     pub one_click_scan_ids: Vec<String>,
-}
-
-fn default_max_hash_bytes() -> u64 {
-    536_870_912 // 512 MB
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             large_file_min_bytes: default_large_file_min_bytes(),
-            duplicate_min_bytes: default_duplicate_min_bytes(),
             include_node_modules: false,
-            scan_duplicates: false,
-            max_hash_bytes: default_max_hash_bytes(),
             one_click_scan_ids: default_one_click_scan_ids(),
         }
     }
 }
 
 pub fn settings_path() -> Result<PathBuf, String> {
-    let data_dir = dirs::data_dir().ok_or_else(|| "无法定位 Application Support".to_string())?;
-    Ok(data_dir.join(APP_NAME).join(SETTINGS_FILE))
+    app_identity::settings_path()
 }
 
 pub fn load_settings() -> Settings {
@@ -74,7 +54,11 @@ pub fn load_settings() -> Settings {
         Err(_) => return Settings::default(),
     };
 
-    serde_json::from_str(&content).unwrap_or_default()
+    let mut settings: Settings = serde_json::from_str(&content).unwrap_or_default();
+    settings
+        .one_click_scan_ids
+        .retain(|id| id != "duplicates");
+    settings
 }
 
 pub fn save_settings(settings: &Settings) -> Result<(), String> {
@@ -89,15 +73,13 @@ pub fn save_settings(settings: &Settings) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
+    use crate::test_home::with_home;
 
     #[test]
     fn default_settings_values() {
         let settings = Settings::default();
         assert_eq!(settings.large_file_min_bytes, 104_857_600);
-        assert_eq!(settings.duplicate_min_bytes, 1_048_576);
         assert!(!settings.include_node_modules);
-        assert!(!settings.scan_duplicates);
     }
 
     #[test]
@@ -105,7 +87,16 @@ mod tests {
         let settings = Settings::default();
         assert!(settings.one_click_scan_ids.contains(&"downloads".to_string()));
         assert!(!settings.one_click_scan_ids.contains(&"large_files".to_string()));
+        assert!(!settings.one_click_scan_ids.contains(&"applications".to_string()));
+    }
+
+    #[test]
+    fn load_strips_duplicates_from_one_click_ids() {
+        let json = r#"{"oneClickScanIds":["downloads","duplicates","trash"]}"#;
+        let mut settings: Settings = serde_json::from_str(json).unwrap();
+        settings.one_click_scan_ids.retain(|id| id != "duplicates");
         assert!(!settings.one_click_scan_ids.contains(&"duplicates".to_string()));
+        assert_eq!(settings.one_click_scan_ids.len(), 2);
     }
 
     #[test]
@@ -123,10 +114,7 @@ mod tests {
     fn round_trip_json() {
         let settings = Settings {
             large_file_min_bytes: 50_000_000,
-            duplicate_min_bytes: 2_000_000,
             include_node_modules: true,
-            scan_duplicates: true,
-            max_hash_bytes: 512 * 1024 * 1024,
             ..Settings::default()
         };
         let json = serde_json::to_string(&settings).unwrap();
@@ -137,25 +125,15 @@ mod tests {
     #[test]
     fn load_save_round_trip() {
         let temp = tempfile::tempdir().unwrap();
-        let prev_home = env::var("HOME").ok();
-        env::set_var("HOME", temp.path());
-
-        let settings = Settings {
-            large_file_min_bytes: 200_000_000,
-            duplicate_min_bytes: 512_000,
-            include_node_modules: true,
-            scan_duplicates: false,
-            max_hash_bytes: 512 * 1024 * 1024,
-            ..Settings::default()
-        };
-        save_settings(&settings).expect("save");
-        let loaded = load_settings();
-        assert_eq!(loaded, settings);
-
-        if let Some(home) = prev_home {
-            env::set_var("HOME", home);
-        } else {
-            env::remove_var("HOME");
-        }
+        with_home(temp.path(), || {
+            let settings = Settings {
+                large_file_min_bytes: 200_000_000,
+                include_node_modules: true,
+                ..Settings::default()
+            };
+            save_settings(&settings).expect("save");
+            let loaded = load_settings();
+            assert_eq!(loaded, settings);
+        });
     }
 }

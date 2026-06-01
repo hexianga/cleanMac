@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Group,
-  Loader,
   Paper,
   Stack,
   Text,
@@ -14,28 +13,27 @@ import {
   categoryCardMainValue,
   categoryCardSubText,
 } from "../lib/categoryCardCopy";
-import { glass } from "../lib/diskCleanerTheme";
-import { scanProgressSubText } from "../lib/scanProgressCopy";
-import type { CategoryScanState, ScanCategoryResult, ScanProgress } from "../lib/types";
+import { glass } from "../lib/cleanMacTheme";
+import type { CategoryScanState, ScanCategoryResult } from "../lib/types";
 
 interface CategoryCardProps {
   scannerId: ScannerId;
   category: ScanCategoryResult | null;
   scanState: CategoryScanState;
-  scanProgress?: ScanProgress;
   selectedCount: number;
   onScan: (scannerId: ScannerId) => void;
   onOpen: (scannerId: ScannerId) => void;
+  onShowCacheImpact?: () => void;
 }
 
 export function CategoryCard({
   scannerId,
   category,
   scanState,
-  scanProgress,
   selectedCount,
   onScan,
   onOpen,
+  onShowCacheImpact,
 }: CategoryCardProps) {
   const meta = SCANNER_META[scannerId];
   const Icon = meta.icon;
@@ -50,21 +48,14 @@ export function CategoryCard({
   const scanButtonLabel =
     scanState === "error" ? "重试" : hasItems || !isUnscanned ? "重扫" : "扫描";
   const scanButtonDisabled =
-    isScanning || (needsPermission && scannerId !== "trash");
+    isScanning ||
+    (needsPermission &&
+      scannerId !== "trash" &&
+      scannerId !== "downloads" &&
+      scannerId !== "applications");
 
-  const mainValue = categoryCardMainValue(
-    scanState,
-    category?.totalBytes ?? 0,
-    scanProgress?.totalBytes,
-  );
-  const subText = categoryCardSubText(
-    scanState,
-    itemCount,
-    scannerId,
-    isScanning ? scanProgressSubText(scanProgress) : undefined,
-  );
-
-  const showLoader = isScanning && mainValue === null;
+  const mainValue = categoryCardMainValue(scanState, category?.totalBytes ?? 0);
+  const subText = categoryCardSubText(scanState, itemCount, scannerId);
 
   const handleCardClick = () => {
     if (canOpen) {
@@ -78,6 +69,7 @@ export function CategoryCard({
       px="sm"
       py="lg"
       w="100%"
+      h="100%"
       onClick={canOpen ? handleCardClick : undefined}
       style={{
         display: "flex",
@@ -122,11 +114,13 @@ export function CategoryCard({
                   alignItems: "center",
                 }}
               >
-                {showLoader ? (
-                  <Loader size="sm" type="dots" />
-                ) : mainValue !== null ? (
+                {mainValue !== null ? (
                   <Text size="lg" fw={700} lh={1.2}>
                     {mainValue}
+                  </Text>
+                ) : isScanning ? (
+                  <Text size="sm" c="dimmed">
+                    —
                   </Text>
                 ) : null}
               </Box>
@@ -156,6 +150,19 @@ export function CategoryCard({
             <Text size="xs" c="dimmed" lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
               {subText}
             </Text>
+            {onShowCacheImpact ? (
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                style={{ flexShrink: 0 }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onShowCacheImpact();
+                }}
+              >
+                影响说明
+              </Button>
+            ) : null}
             {showBadge ? (
               <Badge size="sm" variant="filled" color={meta.color} style={{ flexShrink: 0 }}>
                 已选 {selectedCount}

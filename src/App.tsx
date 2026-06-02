@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AppShell, Box, Container, Text } from "@mantine/core";
+import { Box, Text } from "@mantine/core";
 import { AnimatedBackground } from "./components/AnimatedBackground";
 import { MacWindowTitleBar, MAC_TITLE_BAR_HEIGHT } from "./components/MacWindowTitleBar";
 import { CategoryDetailView } from "./components/CategoryDetailView";
@@ -12,6 +12,7 @@ import { ScanConfirmModal } from "./components/ScanConfirmModal";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { useAppBootstrap } from "./hooks/useAppBootstrap";
 import { useDetailView } from "./hooks/useDetailView";
+import { useDevtoolsShortcut } from "./hooks/useDevtoolsShortcut";
 import { useScanSession } from "./hooks/useScanSession";
 import { cacheDeleteHint } from "./lib/cacheImpactCopy";
 import type { HomeTab } from "./lib/homeTab";
@@ -21,6 +22,8 @@ import type { PermissionCopyVariant } from "./lib/permissionCopy";
 import { slowScanConfirmFor, SLOW_SCAN_CONFIRM } from "./lib/slowScanConfirmCopy";
 
 export default function App() {
+  useDevtoolsShortcut();
+
   // Mantine Modal lockScroll can leave body padding in Tauri WebView after close.
   useEffect(() => {
     document.body.style.paddingRight = "";
@@ -70,51 +73,52 @@ export default function App() {
   };
 
   return (
-    <AppShell
-      padding="md"
-      navbar={{ width: SIDEBAR_WIDTH_PX, breakpoint: "sm" }}
+    <Box
+      className="app-root"
       style={{
         height: "100%",
+        position: "relative",
+        overflow: "hidden",
         ["--app-title-bar-height" as string]: `${MAC_TITLE_BAR_HEIGHT}px`,
         ["--app-sidebar-width" as string]: `${SIDEBAR_WIDTH_PX}px`,
       }}
     >
       <AnimatedBackground />
       <MacWindowTitleBar />
-      <AppShell.Navbar
-        pt={`calc(${MAC_TITLE_BAR_HEIGHT}px + var(--mantine-spacing-md))`}
-        style={{ background: "transparent", borderRight: "none" }}
-      >
-        <HomeSidebar activeTab={activeHomeTab} onTabChange={handleHomeTabChange} />
-      </AppShell.Navbar>
-      <AppShell.Main
-        pt={`calc(${MAC_TITLE_BAR_HEIGHT}px + var(--mantine-spacing-md))`}
+
+      <Box
+        className="app-frame"
         style={{
           position: "relative",
           zIndex: 1,
-          background: "transparent",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          flex: 1,
-          minHeight: 0,
-          width: "100%",
           boxSizing: "border-box",
+          height: "100%",
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "row",
+          gap: "var(--mantine-spacing-md)",
+          padding: "var(--mantine-spacing-md)",
+          paddingTop: `calc(${MAC_TITLE_BAR_HEIGHT}px + var(--mantine-spacing-md))`,
         }}
       >
-        <Container
-          fluid
-          px={0}
-          py={0}
-          maw="100%"
-          w="100%"
+        <Box
+          component="nav"
+          aria-label="主导航"
+          style={{
+            width: SIDEBAR_WIDTH_PX,
+            flexShrink: 0,
+            minHeight: 0,
+          }}
+        >
+          <HomeSidebar activeTab={activeHomeTab} onTabChange={handleHomeTabChange} />
+        </Box>
+
+        <Box
+          component="main"
           style={{
             flex: 1,
+            minWidth: 0,
             minHeight: 0,
-            height: "100%",
-            width: "100%",
-            maxWidth: "100%",
-            boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -152,11 +156,16 @@ export default function App() {
 
           {detail.view === "detail" && detail.detailCategory && (
             <Box
-              className="detail-viewport no-overscroll"
+              className="app-main-scroll no-overscroll"
+              px="md"
+              py="md"
               style={{
-                ["--detail-footer-offset" as string]: detail.showDetailFooter
-                  ? `${DETAIL_FOOTER_HEIGHT_PX + 8}px`
-                  : "0px",
+                flex: 1,
+                minHeight: 0,
+                overflow: "auto",
+                paddingBottom: detail.showDetailFooter
+                  ? DETAIL_FOOTER_HEIGHT_PX + 8
+                  : undefined,
               }}
             >
               <CategoryDetailView
@@ -169,8 +178,8 @@ export default function App() {
               />
             </Box>
           )}
-        </Container>
-      </AppShell.Main>
+        </Box>
+      </Box>
 
       {detail.showDetailFooter && (
         <Box
@@ -231,6 +240,6 @@ export default function App() {
           SLOW_SCAN_CONFIRM.large_files!
         }
       />
-    </AppShell>
+    </Box>
   );
 }

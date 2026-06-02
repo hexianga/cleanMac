@@ -13,23 +13,6 @@ export const cleanMacTheme: MantineThemeOverride = createTheme({
   defaultRadius: "md",
   activeClassName: "",
   components: {
-    AppShell: {
-      styles: {
-        navbar: {
-          backgroundColor: "transparent",
-          border: "none",
-        },
-        footer: {
-          backgroundColor: glass.footerBg,
-          backdropFilter: glass.blur,
-          border: "none",
-          padding: 0,
-        },
-        main: {
-          backgroundColor: "transparent",
-        },
-      },
-    },
     Paper: {
       defaultProps: {
         withBorder: true,

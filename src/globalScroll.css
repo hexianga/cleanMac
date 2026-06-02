@@ -6,34 +6,22 @@ body,
   overscroll-behavior: none;
 }
 
-.mantine-AppShell-root {
+.app-root {
   height: 100%;
   min-height: 0;
 }
 
-.mantine-AppShell-main {
-  flex: 1;
+.app-frame {
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  min-width: 0;
 }
 
-/* Fixed scrollport for category detail — avoids flex height chain issues in Tauri WebView */
-.detail-viewport {
-  position: fixed;
-  z-index: 2;
-  box-sizing: border-box;
-  overflow-x: hidden;
-  overflow-y: auto;
+.app-main-scroll {
   -webkit-overflow-scrolling: touch;
-  top: calc(
-    var(--app-title-bar-height, 34px) + var(--mantine-spacing-md) +
-      var(--mantine-spacing-md)
-  );
-  left: calc(var(--app-sidebar-width, 120px) + var(--mantine-spacing-md));
-  right: var(--mantine-spacing-md);
-  bottom: calc(var(--detail-footer-offset, 0px) + var(--mantine-spacing-md));
-  padding: var(--mantine-spacing-md);
+}
+
+.category-card-grid {
+  box-sizing: border-box;
 }
 
 .mantine-ScrollArea-viewport {
@@ -48,10 +36,6 @@ body,
 
 .no-overscroll {
   overscroll-behavior: none;
-}
-
-.mantine-AppShell-footer {
-  padding: 0 !important;
 }
 
 .detail-table-scroll .mantine-ScrollArea-viewport {

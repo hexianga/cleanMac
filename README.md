@@ -36,6 +36,8 @@ pnpm tauri:build
 
 Ad-hoc signing is configured by default (`signingIdentity: "-"`). For signed releases, see [CONTRIBUTING.md](CONTRIBUTING.md) and `.env.signing.example`.
 
+Release builds include Web Inspector when built with the `devtools` Cargo feature: **⌥⌘I** (Option+Command+I) on macOS.
+
 ## Project layout
 
 | Directory | Role |

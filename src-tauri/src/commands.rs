@@ -413,6 +413,20 @@ fn remove_deleted_items(
     Ok(())
 }
 
+#[tauri::command]
+pub fn toggle_devtools(app: AppHandle) -> Result<(), String> {
+    let webview = app
+        .get_webview_window("main")
+        .ok_or_else(|| "main webview not found".to_string())?;
+
+    if webview.is_devtools_open() {
+        webview.close_devtools();
+    } else {
+        webview.open_devtools();
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod merge_tests {
     use crate::model::{SafetyLevel, ScanCategoryResult};

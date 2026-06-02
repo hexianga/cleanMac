@@ -31,6 +31,7 @@ pub fn run() {
             commands::get_scan_results,
             commands::reveal_in_finder,
             commands::delete_items,
+            commands::toggle_devtools,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

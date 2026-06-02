@@ -1,4 +1,4 @@
-import { Box, Grid, ScrollArea, Stack } from "@mantine/core";
+import { Box, ScrollArea, Stack } from "@mantine/core";
 import { useState } from "react";
 import {
   CLASSIFICATION_SCANNER_ORDER,
@@ -73,13 +73,18 @@ function CategoryCardGrid({
   };
 
   return (
-    <Grid gutter="md" align="stretch" w="100%">
+    <Box
+      className="category-card-grid"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        gap: "var(--mantine-spacing-md)",
+        width: "100%",
+        alignItems: "stretch",
+      }}
+    >
       {scannerOrder.map((scannerId) => (
-        <Grid.Col
-          key={scannerId}
-          span={{ base: 12, sm: 6, md: 3 }}
-          style={{ display: "flex", minWidth: 0 }}
-        >
+        <Box key={scannerId} style={{ display: "flex", minWidth: 0 }}>
           <CategoryCard
             scannerId={scannerId}
             category={categoryById.get(scannerId) ?? null}
@@ -93,9 +98,9 @@ function CategoryCardGrid({
                 : undefined
             }
           />
-        </Grid.Col>
+        </Box>
       ))}
-    </Grid>
+    </Box>
   );
 }
 

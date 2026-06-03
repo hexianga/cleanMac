@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getDiskOverview, getSettings } from "../lib/api";
 import type { AppSettings, DiskOverview } from "../lib/types";
 
@@ -6,11 +6,20 @@ export function useAppBootstrap(refreshPermissions: () => Promise<unknown>) {
   const [disk, setDisk] = useState<DiskOverview | null>(null);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
 
+  const refreshDisk = useCallback(async () => {
+    try {
+      const overview = await getDiskOverview();
+      setDisk(overview);
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
   useEffect(() => {
-    getDiskOverview().then(setDisk).catch(console.error);
+    refreshDisk().catch(console.error);
     getSettings().then(setAppSettings).catch(console.error);
     refreshPermissions().catch(console.error);
-  }, [refreshPermissions]);
+  }, [refreshDisk, refreshPermissions]);
 
   useEffect(() => {
     const onFocus = () => {
@@ -20,5 +29,5 @@ export function useAppBootstrap(refreshPermissions: () => Promise<unknown>) {
     return () => window.removeEventListener("focus", onFocus);
   }, [refreshPermissions]);
 
-  return { disk, appSettings, setAppSettings };
+  return { disk, appSettings, setAppSettings, refreshDisk };
 }

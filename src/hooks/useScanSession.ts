@@ -12,6 +12,7 @@ import {
   readDevScanCache,
   startScan,
 } from "../lib/api";
+import { DEV_CACHE_SCANNER_IDS } from "../lib/devFileTypeCache";
 import { FILE_TYPE_ONE_CLICK_IDS, type HomeTab } from "../lib/homeTab";
 import type { PermissionCopyVariant } from "../lib/permissionCopy";
 import { permissionVariantForScanner } from "../lib/permissionWarnings";
@@ -67,8 +68,13 @@ export function useScanSession(hooks?: {
     if (!import.meta.env.DEV) {
       return;
     }
-    devScanCacheExists("file_image")
-      .then((exists) => setDevCacheAvailable({ file_image: exists }))
+    void Promise.all(
+      DEV_CACHE_SCANNER_IDS.map(async (id) => {
+        const exists = await devScanCacheExists(id);
+        return [id, exists] as const;
+      }),
+    )
+      .then((entries) => setDevCacheAvailable(Object.fromEntries(entries)))
       .catch(console.error);
   }, []);
 

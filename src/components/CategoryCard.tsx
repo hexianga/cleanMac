@@ -9,6 +9,7 @@ import {
   ThemeIcon,
 } from "@mantine/core";
 import { SCANNER_META, type ScannerId } from "../lib/categoryMeta";
+import { isDevCacheScannerId } from "../lib/devFileTypeCache";
 import {
   categoryCardMainValue,
   categoryCardSubText,
@@ -41,9 +42,9 @@ export function CategoryCard({
   const Icon = meta.icon;
   const itemCount = category?.items.length ?? 0;
   const hasItems = itemCount > 0;
-  const isDevFileImage = import.meta.env.DEV && scannerId === "file_image";
+  const isDevCacheCard = import.meta.env.DEV && isDevCacheScannerId(scannerId);
   const isScanning = scanState === "scanning";
-  const canOpen = isDevFileImage
+  const canOpen = isDevCacheCard
     ? !isScanning
     : scanState === "scanned" || devCacheAvailable;
   const needsPermission = scanState === "needs_permission";
@@ -51,7 +52,7 @@ export function CategoryCard({
   const showBadge = selectedCount > 0 && scanState === "scanned";
 
   const scanButtonLabel =
-    isDevFileImage && devCacheAvailable
+    isDevCacheCard && devCacheAvailable
       ? "重载缓存"
       : scanState === "error"
         ? "重试"

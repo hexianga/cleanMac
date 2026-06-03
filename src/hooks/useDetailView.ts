@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { mergeCategories, type ScannerId } from "../lib/categoryMeta";
+import { isDevCacheScannerId } from "../lib/devFileTypeCache";
 import { deleteItems } from "../lib/api";
 import { groupItemsForCategory } from "../lib/groupScanItems";
 import type { PermissionCopyVariant } from "../lib/permissionCopy";
@@ -86,8 +87,8 @@ export function useDetailView(
     (scannerId: ScannerId) => {
       if (
         import.meta.env.DEV &&
-        scannerId === "file_image" &&
-        devCacheAvailable.file_image
+        isDevCacheScannerId(scannerId) &&
+        devCacheAvailable[scannerId]
       ) {
         void loadDevScanCache(scannerId);
         return;
@@ -108,7 +109,7 @@ export function useDetailView(
       void runScan([scannerId]);
     },
     [
-      devCacheAvailable.file_image,
+      devCacheAvailable,
       loadDevScanCache,
       onPermissionRequired,
       permissionStatus?.needsDownloadsAccess,
@@ -128,7 +129,7 @@ export function useDetailView(
 
   const handleOpenCategory = useCallback(
     (scannerId: ScannerId) => {
-      if (import.meta.env.DEV && scannerId === "file_image") {
+      if (import.meta.env.DEV && isDevCacheScannerId(scannerId)) {
         void loadDevScanCache(scannerId).then((ok) => {
           if (ok) {
             setDetailScannerId(scannerId);

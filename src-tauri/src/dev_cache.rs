@@ -3,8 +3,10 @@ use std::path::{Path, PathBuf};
 
 use crate::model::ScanCategoryResult;
 
-const MISSING_CACHE_MSG: &str = "未找到调试缓存。请在仓库根目录执行：pnpm dev:cache-images";
-const INVALID_CACHE_MSG: &str = "调试缓存损坏，请重新执行 pnpm dev:cache-images";
+const MISSING_CACHE_MSG: &str =
+    "未找到调试缓存。请在仓库根目录执行：pnpm dev:cache-videos 或 pnpm dev:cache-images";
+const INVALID_CACHE_MSG: &str =
+    "调试缓存损坏，请重新执行 pnpm dev:cache-videos 或 pnpm dev:cache-images";
 
 pub fn dev_cache_dir() -> Result<PathBuf, String> {
     if let Ok(dir) = std::env::var("CLEANMAC_DEV_CACHE_DIR") {
@@ -39,7 +41,7 @@ fn is_cleanmac_repo_root(dir: &Path) -> bool {
         Ok(content) => content,
         Err(_) => return false,
     };
-    content.contains("dev:cache-images")
+    content.contains("dev:cache-videos") || content.contains("dev:cache-images")
 }
 
 pub fn dev_cache_path(scanner_id: &str) -> Result<PathBuf, String> {

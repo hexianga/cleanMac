@@ -71,6 +71,7 @@ export default function App() {
     openPermissionModal,
     refreshDisk,
     loadDevScanCache,
+    devCacheAvailable,
   );
 
   const handleHomeTabChange = (tab: HomeTab) => {

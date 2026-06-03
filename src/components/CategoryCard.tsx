@@ -41,14 +41,23 @@ export function CategoryCard({
   const Icon = meta.icon;
   const itemCount = category?.items.length ?? 0;
   const hasItems = itemCount > 0;
-  const canOpen = scanState === "scanned" || devCacheAvailable;
+  const isDevFileImage = import.meta.env.DEV && scannerId === "file_image";
   const isScanning = scanState === "scanning";
+  const canOpen = isDevFileImage
+    ? !isScanning
+    : scanState === "scanned" || devCacheAvailable;
   const needsPermission = scanState === "needs_permission";
   const isUnscanned = scanState === "unscanned";
   const showBadge = selectedCount > 0 && scanState === "scanned";
 
   const scanButtonLabel =
-    scanState === "error" ? "重试" : hasItems || !isUnscanned ? "重扫" : "扫描";
+    isDevFileImage && devCacheAvailable
+      ? "重载缓存"
+      : scanState === "error"
+        ? "重试"
+        : hasItems || !isUnscanned
+          ? "重扫"
+          : "扫描";
   const scanButtonDisabled =
     isScanning ||
     (needsPermission &&

@@ -63,7 +63,7 @@ export function useScanSession(hooks?: {
   >({});
   const activeWaitControllersRef = useRef<Set<AbortController>>(new Set());
 
-  useEffect(() => {
+  const refreshDevCacheAvailability = useCallback(() => {
     if (!import.meta.env.DEV) {
       return;
     }
@@ -71,6 +71,10 @@ export function useScanSession(hooks?: {
       .then((exists) => setDevCacheAvailable({ file_image: exists }))
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    refreshDevCacheAvailability();
+  }, [refreshDevCacheAvailability]);
 
   const runScan = useCallback(
     async (scannerIds: ScannerId[]) => {
@@ -255,6 +259,7 @@ export function useScanSession(hooks?: {
         return { ...prev, [scannerId]: set };
       });
       setDevCacheAvailable((prev) => ({ ...prev, [scannerId]: true }));
+      setError(null);
       return true;
     } catch (loadError) {
       console.error(loadError);
@@ -293,6 +298,7 @@ export function useScanSession(hooks?: {
     setError,
     runScan,
     loadDevScanCache,
+    refreshDevCacheAvailability,
     handleScanAll,
   };
 }

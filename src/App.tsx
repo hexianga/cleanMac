@@ -130,7 +130,7 @@ export default function App() {
             minHeight: 0,
             display: "flex",
             flexDirection: "column",
-            overflow: "hidden",
+            overflow: detail.view === "detail" ? "visible" : "hidden",
           }}
         >
           {detail.view === "dashboard" && (
@@ -199,6 +199,9 @@ export default function App() {
                   style={{
                     flexShrink: 0,
                     height: DETAIL_FOOTER_HEIGHT_PX,
+                    width: "calc(100% + var(--mantine-spacing-md))",
+                    marginRight: "calc(-1 * var(--mantine-spacing-md))",
+                    marginBottom: "calc(-1 * var(--mantine-spacing-md))",
                     boxSizing: "border-box",
                     borderTop: `1px solid ${glass.border}`,
                     background: glass.footerBg,

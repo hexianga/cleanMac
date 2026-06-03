@@ -53,7 +53,8 @@ export default function App() {
     handleScanAll,
   } = useScanSession({ onPermissionRequired: openPermissionModal });
 
-  const { disk, appSettings, setAppSettings } = useAppBootstrap(refreshPermissions);
+  const { disk, appSettings, setAppSettings, refreshDisk } =
+    useAppBootstrap(refreshPermissions);
 
   const detail = useDetailView(
     categories,
@@ -63,6 +64,7 @@ export default function App() {
     runScan,
     setError,
     openPermissionModal,
+    refreshDisk,
   );
 
   const handleHomeTabChange = (tab: HomeTab) => {

@@ -20,6 +20,7 @@ export function useDetailView(
   runScan: (scannerIds: ScannerId[]) => Promise<void>,
   setError: React.Dispatch<React.SetStateAction<string | null>>,
   onPermissionRequired: (variant: PermissionCopyVariant) => void,
+  refreshDisk: () => Promise<void>,
 ) {
   const [view, setView] = useState<AppView>("dashboard");
   const [detailScannerId, setDetailScannerId] = useState<ScannerId | null>(null);
@@ -209,7 +210,10 @@ export function useDetailView(
           return next;
         });
         setDeleteConfirmOpen(false);
-        await runScan([detailScannerId]);
+        await Promise.all([
+          refreshDisk(),
+          runScan([detailScannerId]),
+        ]);
       }
     } catch (deleteError) {
       setError(String(deleteError));
@@ -219,6 +223,7 @@ export function useDetailView(
   }, [
     detailScannerId,
     detailSelectedIds,
+    refreshDisk,
     runScan,
     selectedCount,
     setError,

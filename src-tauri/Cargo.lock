@@ -493,7 +493,7 @@ dependencies = [
 
 [[package]]
 name = "cleanmac-desktop"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "blake3",
  "dirs",

@@ -166,56 +166,57 @@ export default function App() {
 
           {detail.view === "detail" && detail.detailCategory && (
             <Box
-              ref={detailScrollRef}
-              className="app-main-scroll no-overscroll"
-              px="md"
-              py="md"
               style={{
                 flex: 1,
                 minHeight: 0,
-                overflow: "auto",
-                paddingBottom: detail.showDetailFooter
-                  ? DETAIL_FOOTER_HEIGHT_PX + 8
-                  : undefined,
+                display: "flex",
+                flexDirection: "column",
               }}
             >
-              <CategoryDetailView
-                category={detail.detailCategory}
-                selectedIds={detail.detailSelectedIds}
-                scrollRef={detailScrollRef}
-                onBack={detail.handleBackToDashboard}
-                onToggleItem={detail.handleToggleItem}
-                onSelectAllDeletable={detail.handleSelectAllDeletable}
-                onDeselectAllInCategory={detail.handleDeselectAllInCategory}
-              />
+              <Box
+                ref={detailScrollRef}
+                className="app-main-scroll no-overscroll"
+                px="md"
+                py="md"
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: "auto",
+                }}
+              >
+                <CategoryDetailView
+                  category={detail.detailCategory}
+                  selectedIds={detail.detailSelectedIds}
+                  scrollRef={detailScrollRef}
+                  onBack={detail.handleBackToDashboard}
+                  onToggleItem={detail.handleToggleItem}
+                  onSelectAllDeletable={detail.handleSelectAllDeletable}
+                  onDeselectAllInCategory={detail.handleDeselectAllInCategory}
+                />
+              </Box>
+              {detail.showDetailFooter ? (
+                <Box
+                  style={{
+                    flexShrink: 0,
+                    height: DETAIL_FOOTER_HEIGHT_PX,
+                    boxSizing: "border-box",
+                    borderTop: `1px solid ${glass.border}`,
+                    background: glass.footerBg,
+                    backdropFilter: glass.blur,
+                  }}
+                >
+                  <DetailFooter
+                    selectedCount={detail.selectedCount}
+                    selectedBytes={detail.selectedBytes}
+                    deleting={detail.deleting}
+                    onClean={detail.handleOpenDeleteConfirm}
+                  />
+                </Box>
+              ) : null}
             </Box>
           )}
         </Box>
       </Box>
-
-      {detail.showDetailFooter && (
-        <Box
-          style={{
-            position: "fixed",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: DETAIL_FOOTER_HEIGHT_PX,
-            zIndex: 10,
-            boxSizing: "border-box",
-            borderTop: `1px solid ${glass.border}`,
-            background: glass.footerBg,
-            backdropFilter: glass.blur,
-          }}
-        >
-          <DetailFooter
-            selectedCount={detail.selectedCount}
-            selectedBytes={detail.selectedBytes}
-            deleting={detail.deleting}
-            onClean={detail.handleOpenDeleteConfirm}
-          />
-        </Box>
-      )}
 
       <SettingsPanel
         opened={settingsOpen}

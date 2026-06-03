@@ -6,7 +6,7 @@ import {
   Text,
 } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { cacheDeleteHint } from "../lib/cacheImpactCopy";
 import { formatBytes } from "../lib/formatBytes";
 import type { ScanCategoryResult } from "../lib/types";
@@ -15,6 +15,7 @@ import { DetailItemList } from "./DetailItemList";
 interface CategoryDetailViewProps {
   category: ScanCategoryResult;
   selectedIds: Set<string>;
+  scrollRef: RefObject<HTMLElement | null>;
   onBack: () => void;
   onToggleItem: (itemId: string, checked: boolean) => void;
   onSelectAllDeletable: () => void;
@@ -24,6 +25,7 @@ interface CategoryDetailViewProps {
 export function CategoryDetailView({
   category,
   selectedIds,
+  scrollRef,
   onBack,
   onToggleItem,
   onSelectAllDeletable,
@@ -90,6 +92,7 @@ export function CategoryDetailView({
         scannerId={category.scannerId}
         items={category.items}
         selectedIds={selectedIds}
+        scrollRef={scrollRef}
         onToggleItem={onToggleItem}
       />
     </Box>

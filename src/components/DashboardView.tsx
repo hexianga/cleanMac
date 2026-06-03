@@ -35,6 +35,7 @@ interface DashboardViewProps {
   categories: ScanCategoryResult[];
   scanState: Record<ScannerId, CategoryScanState>;
   selectedIdsByCategory: Record<ScannerId, Set<string>>;
+  devCacheAvailable?: Partial<Record<ScannerId, boolean>>;
   onOpenCategory: (scannerId: ScannerId) => void;
   onScanCategory: (scannerId: ScannerId) => void;
   onScanAll: () => void;
@@ -46,6 +47,7 @@ interface CardGridProps {
   categories: ScanCategoryResult[];
   scanState: Record<ScannerId, CategoryScanState>;
   selectedIdsByCategory: Record<ScannerId, Set<string>>;
+  devCacheAvailable?: Partial<Record<ScannerId, boolean>>;
   onOpenCategory: (scannerId: ScannerId) => void;
   onScanCategory: (scannerId: ScannerId) => void;
   onShowCacheImpact: (scannerId: "app_caches" | "dev_caches") => void;
@@ -56,6 +58,7 @@ function CategoryCardGrid({
   categories,
   scanState,
   selectedIdsByCategory,
+  devCacheAvailable,
   onOpenCategory,
   onScanCategory,
   onShowCacheImpact,
@@ -90,6 +93,7 @@ function CategoryCardGrid({
             category={categoryById.get(scannerId) ?? null}
             scanState={scanState[scannerId]}
             selectedCount={selectedCountInCategory(scannerId)}
+            devCacheAvailable={devCacheAvailable?.[scannerId]}
             onScan={onScanCategory}
             onOpen={onOpenCategory}
             onShowCacheImpact={
@@ -110,6 +114,7 @@ export function DashboardView({
   categories,
   scanState,
   selectedIdsByCategory,
+  devCacheAvailable,
   onOpenCategory,
   onScanCategory,
   onScanAll,
@@ -130,6 +135,7 @@ export function DashboardView({
     categories,
     scanState,
     selectedIdsByCategory,
+    devCacheAvailable,
     onOpenCategory,
     onScanCategory,
     onShowCacheImpact: (id: "app_caches" | "dev_caches") => setCacheImpactId(id),

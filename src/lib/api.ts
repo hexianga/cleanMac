@@ -37,6 +37,14 @@ export function saveSettings(settings: AppSettings) {
   return invoke<void>("save_settings", { settings });
 }
 
+export function devScanCacheExists(scannerId: string) {
+  return invoke<boolean>("dev_scan_cache_exists", { scannerId });
+}
+
+export function readDevScanCache(scannerId: string) {
+  return invoke<ScanCategoryResult>("read_dev_scan_cache", { scannerId });
+}
+
 export function startScan(scannerIds: string[]) {
   return invoke<void>("start_scan", { scannerIds });
 }

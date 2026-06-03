@@ -1,5 +1,6 @@
 import { Box, Button, Checkbox, Text } from "@mantine/core";
-import { memo, useMemo } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { memo, useMemo, type RefObject } from "react";
 import { revealInFinder } from "../lib/api";
 import { glass } from "../lib/cleanMacTheme";
 import { formatBytes } from "../lib/formatBytes";
@@ -19,6 +20,7 @@ interface DetailItemListProps {
   items: ScanItem[];
   selectedIds: Set<string>;
   onToggleItem: (itemId: string, checked: boolean) => void;
+  scrollRef: RefObject<HTMLElement | null>;
 }
 
 export function DetailItemList({
@@ -26,11 +28,22 @@ export function DetailItemList({
   items,
   selectedIds,
   onToggleItem,
+  scrollRef,
 }: DetailItemListProps) {
   const rows = useMemo(() => {
     const groups = groupItemsForCategory(scannerId, items);
     return flattenDetailGroups(groups);
   }, [scannerId, items]);
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) =>
+      rows[index]?.kind === "group-header"
+        ? DETAIL_GROUP_HEADER_HEIGHT
+        : DETAIL_ITEM_ROW_HEIGHT,
+    overscan: 12,
+  });
 
   return (
     <Box w="100%">
@@ -58,18 +71,39 @@ export function DetailItemList({
         </Text>
       </Box>
 
-      {rows.map((row) =>
-        row.kind === "group-header" ? (
-          <GroupHeaderRow key={row.key} row={row} />
-        ) : (
-          <ItemRow
-            key={row.key}
-            item={row.item}
-            checked={selectedIds.has(row.item.id)}
-            onToggleItem={onToggleItem}
-          />
-        ),
-      )}
+      <Box
+        style={{
+          height: virtualizer.getTotalSize(),
+          position: "relative",
+          width: "100%",
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const row = rows[virtualRow.index]!;
+          return (
+            <Box
+              key={row.key}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              {row.kind === "group-header" ? (
+                <GroupHeaderRow row={row} />
+              ) : (
+                <ItemRow
+                  item={row.item}
+                  checked={selectedIds.has(row.item.id)}
+                  onToggleItem={onToggleItem}
+                />
+              )}
+            </Box>
+          );
+        })}
+      </Box>
     </Box>
   );
 }

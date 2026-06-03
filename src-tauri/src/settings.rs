@@ -18,6 +18,26 @@ fn default_one_click_scan_ids() -> Vec<String> {
     ]
 }
 
+fn default_file_image_min_bytes() -> u64 {
+    0
+}
+
+fn default_file_video_min_bytes() -> u64 {
+    10 * 1024 * 1024
+}
+
+fn default_file_audio_min_bytes() -> u64 {
+    1024 * 1024
+}
+
+fn default_file_pdf_min_bytes() -> u64 {
+    1024 * 1024
+}
+
+fn default_file_office_min_bytes() -> u64 {
+    1024 * 1024
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -27,6 +47,16 @@ pub struct Settings {
     pub include_node_modules: bool,
     #[serde(default = "default_one_click_scan_ids")]
     pub one_click_scan_ids: Vec<String>,
+    #[serde(default = "default_file_image_min_bytes")]
+    pub file_image_min_bytes: u64,
+    #[serde(default = "default_file_video_min_bytes")]
+    pub file_video_min_bytes: u64,
+    #[serde(default = "default_file_audio_min_bytes")]
+    pub file_audio_min_bytes: u64,
+    #[serde(default = "default_file_pdf_min_bytes")]
+    pub file_pdf_min_bytes: u64,
+    #[serde(default = "default_file_office_min_bytes")]
+    pub file_office_min_bytes: u64,
 }
 
 impl Default for Settings {
@@ -35,6 +65,24 @@ impl Default for Settings {
             large_file_min_bytes: default_large_file_min_bytes(),
             include_node_modules: false,
             one_click_scan_ids: default_one_click_scan_ids(),
+            file_image_min_bytes: default_file_image_min_bytes(),
+            file_video_min_bytes: default_file_video_min_bytes(),
+            file_audio_min_bytes: default_file_audio_min_bytes(),
+            file_pdf_min_bytes: default_file_pdf_min_bytes(),
+            file_office_min_bytes: default_file_office_min_bytes(),
+        }
+    }
+}
+
+impl Settings {
+    pub fn min_bytes_for_scanner(&self, scanner_id: &str) -> u64 {
+        match scanner_id {
+            "file_image" => self.file_image_min_bytes,
+            "file_video" => self.file_video_min_bytes,
+            "file_audio" => self.file_audio_min_bytes,
+            "file_pdf" => self.file_pdf_min_bytes,
+            "file_office" => self.file_office_min_bytes,
+            _ => 0,
         }
     }
 }

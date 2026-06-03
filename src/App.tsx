@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Box, Text } from "@mantine/core";
 import { AnimatedBackground } from "./components/AnimatedBackground";
 import { MacWindowTitleBar, MAC_TITLE_BAR_HEIGHT } from "./components/MacWindowTitleBar";
@@ -33,7 +33,10 @@ export default function App() {
   const [permissionModalOpen, setPermissionModalOpen] = useState(false);
   const [permissionModalVariant, setPermissionModalVariant] =
     useState<PermissionCopyVariant>("fullDisk");
-  const [activeHomeTab, setActiveHomeTab] = useState<HomeTab>("classification");
+  const [activeHomeTab, setActiveHomeTab] = useState<HomeTab>(
+    import.meta.env.DEV ? "file_type" : "classification",
+  );
+  const detailScrollRef = useRef<HTMLDivElement>(null);
 
   const openPermissionModal = (variant: PermissionCopyVariant) => {
     setPermissionModalVariant(variant);
@@ -49,7 +52,9 @@ export default function App() {
     setSelectedIdsByCategory,
     error,
     setError,
+    devCacheAvailable,
     runScan,
+    loadDevScanCache,
     handleScanAll,
   } = useScanSession({ onPermissionRequired: openPermissionModal });
 
@@ -65,6 +70,7 @@ export default function App() {
     setError,
     openPermissionModal,
     refreshDisk,
+    loadDevScanCache,
   );
 
   const handleHomeTabChange = (tab: HomeTab) => {
@@ -143,6 +149,7 @@ export default function App() {
                 categories={categories}
                 scanState={scanState}
                 selectedIdsByCategory={selectedIdsByCategory}
+                devCacheAvailable={devCacheAvailable}
                 onOpenCategory={detail.handleOpenCategory}
                 onScanCategory={detail.handleScanCategory}
                 onScanAll={() => handleScanAll(appSettings, activeHomeTab)}
@@ -158,6 +165,7 @@ export default function App() {
 
           {detail.view === "detail" && detail.detailCategory && (
             <Box
+              ref={detailScrollRef}
               className="app-main-scroll no-overscroll"
               px="md"
               py="md"
@@ -173,6 +181,7 @@ export default function App() {
               <CategoryDetailView
                 category={detail.detailCategory}
                 selectedIds={detail.detailSelectedIds}
+                scrollRef={detailScrollRef}
                 onBack={detail.handleBackToDashboard}
                 onToggleItem={detail.handleToggleItem}
                 onSelectAllDeletable={detail.handleSelectAllDeletable}

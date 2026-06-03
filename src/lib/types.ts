@@ -2,6 +2,11 @@ export interface AppSettings {
   largeFileMinBytes: number;
   includeNodeModules: boolean;
   oneClickScanIds: string[];
+  fileImageMinBytes: number;
+  fileVideoMinBytes: number;
+  fileAudioMinBytes: number;
+  filePdfMinBytes: number;
+  fileOfficeMinBytes: number;
 }
 
 export type SafetyLevel = "safe" | "review" | "displayOnly";

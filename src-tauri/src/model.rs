@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::settings::Settings;
 
@@ -17,7 +17,7 @@ pub struct DiskOverview {
     pub available_human: String,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum SafetyLevel {
     Safe,
@@ -25,7 +25,7 @@ pub enum SafetyLevel {
     DisplayOnly,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanItem {
     pub id: String,
@@ -45,7 +45,7 @@ pub struct ScanItem {
     pub deletable: bool,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanCategoryResult {
     pub scanner_id: String,
@@ -83,6 +83,17 @@ impl ScanContext {
             cancel: None,
             on_progress: None,
         }
+    }
+
+    pub fn with_settings(settings: Settings) -> Result<Self, String> {
+        dirs::home_dir()
+            .ok_or_else(|| "无法定位用户主目录".to_string())
+            .map(|home| Self {
+                home,
+                settings,
+                cancel: None,
+                on_progress: None,
+            })
     }
 
     pub fn with_run_controls(

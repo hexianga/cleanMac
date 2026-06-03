@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { mergeCategories, type ScannerId } from "../lib/categoryMeta";
-import { deleteItems } from "../lib/api";
+import { deleteItems, devScanCacheExists } from "../lib/api";
 import { groupItemsForCategory } from "../lib/groupScanItems";
 import type { PermissionCopyVariant } from "../lib/permissionCopy";
 import { slowScanConfirmFor } from "../lib/slowScanConfirmCopy";
@@ -21,6 +21,7 @@ export function useDetailView(
   setError: React.Dispatch<React.SetStateAction<string | null>>,
   onPermissionRequired: (variant: PermissionCopyVariant) => void,
   refreshDisk: () => Promise<void>,
+  loadDevScanCache: (scannerId: ScannerId) => Promise<boolean>,
 ) {
   const [view, setView] = useState<AppView>("dashboard");
   const [detailScannerId, setDetailScannerId] = useState<ScannerId | null>(null);
@@ -113,10 +114,24 @@ export function useDetailView(
     void runScan([scannerId]);
   }, [runScan, slowScanConfirmId]);
 
-  const handleOpenCategory = useCallback((scannerId: ScannerId) => {
-    setDetailScannerId(scannerId);
-    setView("detail");
-  }, []);
+  const handleOpenCategory = useCallback(
+    (scannerId: ScannerId) => {
+      const open = () => {
+        setDetailScannerId(scannerId);
+        setView("detail");
+      };
+
+      if (import.meta.env.DEV && scannerId === "file_image") {
+        void devScanCacheExists(scannerId)
+          .then((exists) => (exists ? loadDevScanCache(scannerId) : false))
+          .finally(open);
+        return;
+      }
+
+      open();
+    },
+    [loadDevScanCache],
+  );
 
   const handleBackToDashboard = useCallback(() => {
     setView("dashboard");

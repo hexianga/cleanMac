@@ -35,6 +35,7 @@ fn walk_file_types(
     scanner_id: &str,
     extensions: &[&str],
     include_node_modules: bool,
+    min_bytes: u64,
     items: &mut Vec<ScanItem>,
     warnings: &mut Vec<String>,
     visited: &mut u32,
@@ -76,6 +77,7 @@ fn walk_file_types(
                 scanner_id,
                 extensions,
                 include_node_modules,
+                min_bytes,
                 items,
                 warnings,
                 visited,
@@ -116,6 +118,10 @@ fn walk_file_types(
         };
 
         let logical = logical_file_size(&meta);
+        if logical < min_bytes {
+            continue;
+        }
+
         let logical_size_bytes = if is_sparse_file(&meta) {
             Some(logical)
         } else {
@@ -179,6 +185,7 @@ impl Scanner for FileTypeScanner {
         let mut warnings = Vec::new();
         let mut visited = 0u32;
 
+        let min_bytes = ctx.settings.min_bytes_for_scanner(self.id());
         walk_file_types(
             &ctx.home,
             &ctx.home,
@@ -186,6 +193,7 @@ impl Scanner for FileTypeScanner {
             self.id(),
             self.extensions,
             ctx.settings.include_node_modules,
+            min_bytes,
             &mut items,
             &mut warnings,
             &mut visited,
@@ -247,10 +255,47 @@ file_type_scanner!(FileOfficeScanner, "file_office", "Office", OFFICE_EXT);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::ScanContext;
+    use crate::settings::Settings;
+    use std::fs;
+    use tempfile::tempdir;
 
     #[test]
     fn matches_extensions_case_insensitive() {
         assert!(ext_matches(Path::new("/a/file.MP4"), VIDEO_EXT));
         assert!(!ext_matches(Path::new("/a/file.pdf"), VIDEO_EXT));
+    }
+
+    #[test]
+    fn skips_files_below_min_bytes() {
+        let home = tempdir().unwrap();
+        fs::write(home.path().join("tiny.jpg"), b"x").unwrap();
+
+        let ctx = ScanContext {
+            home: home.path().to_path_buf(),
+            settings: Settings {
+                file_image_min_bytes: 1024,
+                ..Settings::default()
+            },
+            cancel: None,
+            on_progress: None,
+        };
+
+        let mut items = Vec::new();
+        let mut warnings = Vec::new();
+        let mut visited = 0u32;
+        walk_file_types(
+            home.path(),
+            home.path(),
+            &ctx,
+            "file_image",
+            IMAGE_EXT,
+            false,
+            ctx.settings.file_image_min_bytes,
+            &mut items,
+            &mut warnings,
+            &mut visited,
+        );
+        assert!(items.is_empty());
     }
 }

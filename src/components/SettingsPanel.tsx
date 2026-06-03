@@ -25,6 +25,39 @@ import { SettingsFieldRow } from "./SettingsFieldRow";
 
 const MB = 1024 * 1024;
 
+const FILE_TYPE_MIN_FIELDS = [
+  {
+    key: "fileImageMinBytes" as const,
+    label: "图片最小体积（MB）",
+    tooltip: "小于此大小的图片不会出现在「图片」类别",
+    defaultMb: 0,
+  },
+  {
+    key: "fileVideoMinBytes" as const,
+    label: "视频最小体积（MB）",
+    tooltip: "小于此大小的视频不会出现在「视频」类别",
+    defaultMb: 10,
+  },
+  {
+    key: "fileAudioMinBytes" as const,
+    label: "音频最小体积（MB）",
+    tooltip: "小于此大小的音频不会出现在「音频」类别",
+    defaultMb: 1,
+  },
+  {
+    key: "filePdfMinBytes" as const,
+    label: "PDF 最小体积（MB）",
+    tooltip: "小于此大小的 PDF 不会出现在「PDF」类别",
+    defaultMb: 1,
+  },
+  {
+    key: "fileOfficeMinBytes" as const,
+    label: "Office 最小体积（MB）",
+    tooltip: "小于此大小的 Office 文件不会出现在「Office」类别",
+    defaultMb: 1,
+  },
+] as const;
+
 function FieldLabel({ label, tooltip }: { label: string; tooltip: string }) {
   return (
     <Group gap={6} wrap="nowrap" component="span" align="center">
@@ -50,7 +83,15 @@ function normalizeSettings(raw: AppSettings): AppSettings {
       ? raw.oneClickScanIds
       : [...DEFAULT_ONE_CLICK_SCAN_IDS]
   ).filter(isClassificationScannerId);
-  return { ...raw, oneClickScanIds };
+  return {
+    ...raw,
+    oneClickScanIds,
+    fileImageMinBytes: raw.fileImageMinBytes ?? 0,
+    fileVideoMinBytes: raw.fileVideoMinBytes ?? 10 * MB,
+    fileAudioMinBytes: raw.fileAudioMinBytes ?? MB,
+    filePdfMinBytes: raw.filePdfMinBytes ?? MB,
+    fileOfficeMinBytes: raw.fileOfficeMinBytes ?? MB,
+  };
 }
 
 interface SettingsPanelProps {
@@ -156,6 +197,32 @@ export function SettingsPanel({ opened, onClose, onSaved }: SettingsPanelProps) 
               }}
             />
           </SettingsFieldRow>
+
+          <Text fw={600} size="sm" mt="md">
+            文件类型扫描
+          </Text>
+          <Text size="sm" c="dimmed">
+            仅统计达到最小体积的文件；dev 调试缓存命令同样使用这些阈值。
+          </Text>
+          {FILE_TYPE_MIN_FIELDS.map(({ key, label, tooltip, defaultMb }) => (
+            <SettingsFieldRow
+              key={key}
+              label={<FieldLabel label={label} tooltip={tooltip} />}
+            >
+              <NumberInput
+                w="100%"
+                min={0}
+                value={Math.round((settings[key] ?? defaultMb * MB) / MB)}
+                onChange={(value) => {
+                  const mb = typeof value === "number" ? value : defaultMb;
+                  setSettings({
+                    ...settings,
+                    [key]: mb * MB,
+                  });
+                }}
+              />
+            </SettingsFieldRow>
+          ))}
 
           <Text fw={600} size="sm" mt="md">
             一键扫描范围（文件分类）

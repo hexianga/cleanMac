@@ -21,6 +21,7 @@ interface CategoryCardProps {
   category: ScanCategoryResult | null;
   scanState: CategoryScanState;
   selectedCount: number;
+  devCacheAvailable?: boolean;
   onScan: (scannerId: ScannerId) => void;
   onOpen: (scannerId: ScannerId) => void;
   onShowCacheImpact?: () => void;
@@ -31,6 +32,7 @@ export function CategoryCard({
   category,
   scanState,
   selectedCount,
+  devCacheAvailable = false,
   onScan,
   onOpen,
   onShowCacheImpact,
@@ -39,7 +41,7 @@ export function CategoryCard({
   const Icon = meta.icon;
   const itemCount = category?.items.length ?? 0;
   const hasItems = itemCount > 0;
-  const canOpen = scanState === "scanned";
+  const canOpen = scanState === "scanned" || devCacheAvailable;
   const isScanning = scanState === "scanning";
   const needsPermission = scanState === "needs_permission";
   const isUnscanned = scanState === "unscanned";
@@ -55,7 +57,12 @@ export function CategoryCard({
       scannerId !== "applications");
 
   const mainValue = categoryCardMainValue(scanState, category?.totalBytes ?? 0);
-  const subText = categoryCardSubText(scanState, itemCount, scannerId);
+  const subText = categoryCardSubText(
+    scanState,
+    itemCount,
+    scannerId,
+    devCacheAvailable,
+  );
 
   const handleCardClick = () => {
     if (canOpen) {

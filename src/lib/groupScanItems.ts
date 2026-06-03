@@ -7,6 +7,14 @@ export interface ItemGroup {
   totalBytes: number;
 }
 
+/** True when the detail list shows multiple group headers (not a flat list). */
+export function categoryHasMultipleDetailGroups(
+  scannerId: string,
+  items: ScanItem[],
+): boolean {
+  return groupItemsForCategory(scannerId, items).length > 1;
+}
+
 export function groupItemsForCategory(
   scannerId: string,
   items: ScanItem[],

@@ -1,6 +1,7 @@
 import { Box, Button, Checkbox, Text } from "@mantine/core";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { memo, useMemo, type RefObject } from "react";
+import { memo, useLayoutEffect, useMemo, useState, type RefObject } from "react";
+import { Virtuoso } from "react-virtuoso";
 import { revealInFinder } from "../lib/api";
 import { glass } from "../lib/cleanMacTheme";
 import { formatBytes } from "../lib/formatBytes";
@@ -10,7 +11,10 @@ import {
   flattenDetailGroups,
   type DetailListRow,
 } from "../lib/detailListRows";
-import { groupItemsForCategory } from "../lib/groupScanItems";
+import {
+  categoryHasMultipleDetailGroups,
+  groupItemsForCategory,
+} from "../lib/groupScanItems";
 import type { ScanItem } from "../lib/types";
 
 const GRID_COLUMNS = "40px minmax(0, 1fr) 100px 120px 140px";
@@ -30,6 +34,114 @@ export function DetailItemList({
   onToggleItem,
   scrollRef,
 }: DetailItemListProps) {
+  const useGroupedList = useMemo(
+    () => categoryHasMultipleDetailGroups(scannerId, items),
+    [scannerId, items],
+  );
+
+  return (
+    <Box w="100%">
+      <ListColumnHeader />
+      {useGroupedList ? (
+        <GroupedVirtualList
+          scannerId={scannerId}
+          items={items}
+          selectedIds={selectedIds}
+          onToggleItem={onToggleItem}
+          scrollRef={scrollRef}
+        />
+      ) : (
+        <FlatVirtuosoList
+          items={items}
+          selectedIds={selectedIds}
+          onToggleItem={onToggleItem}
+          scrollRef={scrollRef}
+        />
+      )}
+    </Box>
+  );
+}
+
+function ListColumnHeader() {
+  return (
+    <Box
+      style={{
+        display: "grid",
+        gridTemplateColumns: GRID_COLUMNS,
+        gap: 0,
+        padding: "8px 12px",
+        borderBottom: `1px solid ${glass.border}`,
+      }}
+    >
+      <Text size="xs" c="dimmed" fw={600} />
+      <Text size="xs" c="dimmed" fw={600}>
+        文件名
+      </Text>
+      <Text size="xs" c="dimmed" fw={600}>
+        大小
+      </Text>
+      <Text size="xs" c="dimmed" fw={600}>
+        类型
+      </Text>
+      <Text size="xs" c="dimmed" fw={600}>
+        操作
+      </Text>
+    </Box>
+  );
+}
+
+function FlatVirtuosoList({
+  items,
+  selectedIds,
+  onToggleItem,
+  scrollRef,
+}: {
+  items: ScanItem[];
+  selectedIds: Set<string>;
+  onToggleItem: (itemId: string, checked: boolean) => void;
+  scrollRef: RefObject<HTMLElement | null>;
+}) {
+  const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    setScrollParent(scrollRef.current);
+  });
+
+  if (!scrollParent || items.length === 0) {
+    return null;
+  }
+
+  return (
+    <Virtuoso
+      customScrollParent={scrollParent}
+      data={items}
+      defaultItemHeight={DETAIL_ITEM_ROW_HEIGHT}
+      fixedItemHeight={DETAIL_ITEM_ROW_HEIGHT}
+      increaseViewportBy={{ top: 200, bottom: 400 }}
+      itemContent={(_index, item) => (
+        <ItemRow
+          item={item}
+          checked={selectedIds.has(item.id)}
+          onToggleItem={onToggleItem}
+        />
+      )}
+    />
+  );
+}
+
+function GroupedVirtualList({
+  scannerId,
+  items,
+  selectedIds,
+  onToggleItem,
+  scrollRef,
+}: {
+  scannerId: string;
+  items: ScanItem[];
+  selectedIds: Set<string>;
+  onToggleItem: (itemId: string, checked: boolean) => void;
+  scrollRef: RefObject<HTMLElement | null>;
+}) {
   const rows = useMemo(() => {
     const groups = groupItemsForCategory(scannerId, items);
     return flattenDetailGroups(groups);
@@ -46,64 +158,38 @@ export function DetailItemList({
   });
 
   return (
-    <Box w="100%">
-      <Box
-        style={{
-          display: "grid",
-          gridTemplateColumns: GRID_COLUMNS,
-          gap: 0,
-          padding: "8px 12px",
-          borderBottom: `1px solid ${glass.border}`,
-        }}
-      >
-        <Text size="xs" c="dimmed" fw={600} />
-        <Text size="xs" c="dimmed" fw={600}>
-          文件名
-        </Text>
-        <Text size="xs" c="dimmed" fw={600}>
-          大小
-        </Text>
-        <Text size="xs" c="dimmed" fw={600}>
-          类型
-        </Text>
-        <Text size="xs" c="dimmed" fw={600}>
-          操作
-        </Text>
-      </Box>
-
-      <Box
-        style={{
-          height: virtualizer.getTotalSize(),
-          position: "relative",
-          width: "100%",
-        }}
-      >
-        {virtualizer.getVirtualItems().map((virtualRow) => {
-          const row = rows[virtualRow.index]!;
-          return (
-            <Box
-              key={row.key}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              {row.kind === "group-header" ? (
-                <GroupHeaderRow row={row} />
-              ) : (
-                <ItemRow
-                  item={row.item}
-                  checked={selectedIds.has(row.item.id)}
-                  onToggleItem={onToggleItem}
-                />
-              )}
-            </Box>
-          );
-        })}
-      </Box>
+    <Box
+      style={{
+        height: virtualizer.getTotalSize(),
+        position: "relative",
+        width: "100%",
+      }}
+    >
+      {virtualizer.getVirtualItems().map((virtualRow) => {
+        const row = rows[virtualRow.index]!;
+        return (
+          <Box
+            key={row.key}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              transform: `translateY(${virtualRow.start}px)`,
+            }}
+          >
+            {row.kind === "group-header" ? (
+              <GroupHeaderRow row={row} />
+            ) : (
+              <ItemRow
+                item={row.item}
+                checked={selectedIds.has(row.item.id)}
+                onToggleItem={onToggleItem}
+              />
+            )}
+          </Box>
+        );
+      })}
     </Box>
   );
 }
@@ -150,6 +236,7 @@ const ItemRow = memo(function ItemRow({
         alignItems: "center",
         padding: "0 12px",
         borderBottom: `1px solid ${glass.border}`,
+        boxSizing: "border-box",
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = "rgba(255, 255, 255, 0.04)";

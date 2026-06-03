@@ -7,12 +7,9 @@ import {
 } from "../lib/categoryMeta";
 import {
   checkPermissions,
-  devScanCacheExists,
   getScanResults,
-  readDevScanCache,
   startScan,
 } from "../lib/api";
-import { DEV_CACHE_SCANNER_IDS } from "../lib/devFileTypeCache";
 import { FILE_TYPE_ONE_CLICK_IDS, type HomeTab } from "../lib/homeTab";
 import type { PermissionCopyVariant } from "../lib/permissionCopy";
 import { permissionVariantForScanner } from "../lib/permissionWarnings";
@@ -59,28 +56,7 @@ export function useScanSession(hooks?: {
     emptySelectedIdsByCategory,
   );
   const [error, setError] = useState<string | null>(null);
-  const [devCacheAvailable, setDevCacheAvailable] = useState<
-    Partial<Record<ScannerId, boolean>>
-  >({});
   const activeWaitControllersRef = useRef<Set<AbortController>>(new Set());
-
-  const refreshDevCacheAvailability = useCallback(() => {
-    if (!import.meta.env.DEV) {
-      return;
-    }
-    void Promise.all(
-      DEV_CACHE_SCANNER_IDS.map(async (id) => {
-        const exists = await devScanCacheExists(id);
-        return [id, exists] as const;
-      }),
-    )
-      .then((entries) => setDevCacheAvailable(Object.fromEntries(entries)))
-      .catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    refreshDevCacheAvailability();
-  }, [refreshDevCacheAvailability]);
 
   const runScan = useCallback(
     async (scannerIds: ScannerId[]) => {
@@ -247,33 +223,6 @@ export function useScanSession(hooks?: {
     }
   }, []);
 
-  const loadDevScanCache = useCallback(async (scannerId: ScannerId): Promise<boolean> => {
-    try {
-      const category = await readDevScanCache(scannerId);
-      setCategories((prev) => {
-        const rest = prev.filter((c) => c.scannerId !== scannerId);
-        return [...rest, category];
-      });
-      setScanState((s) => ({ ...s, [scannerId]: "scanned" }));
-      setSelectedIdsByCategory((prev) => {
-        const set = new Set<string>();
-        for (const item of category.items) {
-          if (item.selectedByDefault && item.deletable) {
-            set.add(item.id);
-          }
-        }
-        return { ...prev, [scannerId]: set };
-      });
-      setDevCacheAvailable((prev) => ({ ...prev, [scannerId]: true }));
-      setError(null);
-      return true;
-    } catch (loadError) {
-      console.error(loadError);
-      setError(String(loadError));
-      return false;
-    }
-  }, []);
-
   const handleScanAll = useCallback(
     (appSettings: AppSettings | null, activeTab: HomeTab) => {
       if (activeTab === "file_type") {
@@ -299,12 +248,9 @@ export function useScanSession(hooks?: {
     scanState,
     selectedIdsByCategory,
     setSelectedIdsByCategory,
-    devCacheAvailable,
     error,
     setError,
     runScan,
-    loadDevScanCache,
-    refreshDevCacheAvailability,
     handleScanAll,
   };
 }

@@ -1,6 +1,6 @@
 import { Box, Button, Checkbox, Text } from "@mantine/core";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { memo, useLayoutEffect, useMemo, useState, type RefObject } from "react";
+import { memo, useMemo, useRef } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { revealInFinder } from "../lib/api";
 import { glass } from "../lib/cleanMacTheme";
@@ -24,7 +24,6 @@ interface DetailItemListProps {
   items: ScanItem[];
   selectedIds: Set<string>;
   onToggleItem: (itemId: string, checked: boolean) => void;
-  scrollRef: RefObject<HTMLElement | null>;
 }
 
 export function DetailItemList({
@@ -32,7 +31,6 @@ export function DetailItemList({
   items,
   selectedIds,
   onToggleItem,
-  scrollRef,
 }: DetailItemListProps) {
   const useGroupedList = useMemo(
     () => categoryHasMultipleDetailGroups(scannerId, items),
@@ -40,22 +38,28 @@ export function DetailItemList({
   );
 
   return (
-    <Box w="100%">
-      <ListColumnHeader />
+    <Box
+      w="100%"
+      style={{
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {useGroupedList ? (
         <GroupedVirtualList
           scannerId={scannerId}
           items={items}
           selectedIds={selectedIds}
           onToggleItem={onToggleItem}
-          scrollRef={scrollRef}
         />
       ) : (
         <FlatVirtuosoList
           items={items}
           selectedIds={selectedIds}
           onToggleItem={onToggleItem}
-          scrollRef={scrollRef}
         />
       )}
     </Box>
@@ -94,30 +98,23 @@ function FlatVirtuosoList({
   items,
   selectedIds,
   onToggleItem,
-  scrollRef,
 }: {
   items: ScanItem[];
   selectedIds: Set<string>;
   onToggleItem: (itemId: string, checked: boolean) => void;
-  scrollRef: RefObject<HTMLElement | null>;
 }) {
-  const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
-
-  useLayoutEffect(() => {
-    setScrollParent(scrollRef.current);
-  });
-
-  if (!scrollParent || items.length === 0) {
-    return null;
+  if (items.length === 0) {
+    return <ListColumnHeader />;
   }
 
   return (
     <Virtuoso
-      customScrollParent={scrollParent}
+      style={{ flex: 1, minHeight: 0, height: "100%" }}
       data={items}
       defaultItemHeight={DETAIL_ITEM_ROW_HEIGHT}
       fixedItemHeight={DETAIL_ITEM_ROW_HEIGHT}
       increaseViewportBy={{ top: 200, bottom: 400 }}
+      components={{ Header: ListColumnHeader }}
       itemContent={(_index, item) => (
         <ItemRow
           item={item}
@@ -134,14 +131,13 @@ function GroupedVirtualList({
   items,
   selectedIds,
   onToggleItem,
-  scrollRef,
 }: {
   scannerId: string;
   items: ScanItem[];
   selectedIds: Set<string>;
   onToggleItem: (itemId: string, checked: boolean) => void;
-  scrollRef: RefObject<HTMLElement | null>;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const rows = useMemo(() => {
     const groups = groupItemsForCategory(scannerId, items);
     return flattenDetailGroups(groups);
@@ -158,39 +154,52 @@ function GroupedVirtualList({
   });
 
   return (
-    <Box
-      style={{
-        height: virtualizer.getTotalSize(),
-        position: "relative",
-        width: "100%",
-      }}
-    >
-      {virtualizer.getVirtualItems().map((virtualRow) => {
-        const row = rows[virtualRow.index]!;
-        return (
-          <Box
-            key={row.key}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              transform: `translateY(${virtualRow.start}px)`,
-            }}
-          >
-            {row.kind === "group-header" ? (
-              <GroupHeaderRow row={row} />
-            ) : (
-              <ItemRow
-                item={row.item}
-                checked={selectedIds.has(row.item.id)}
-                onToggleItem={onToggleItem}
-              />
-            )}
-          </Box>
-        );
-      })}
-    </Box>
+    <>
+      <ListColumnHeader />
+      <Box
+        ref={scrollRef}
+        className="app-main-scroll no-overscroll"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: "auto",
+        }}
+      >
+        <Box
+          style={{
+            height: virtualizer.getTotalSize(),
+            position: "relative",
+            width: "100%",
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const row = rows[virtualRow.index]!;
+            return (
+              <Box
+                key={row.key}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                {row.kind === "group-header" ? (
+                  <GroupHeaderRow row={row} />
+                ) : (
+                  <ItemRow
+                    item={row.item}
+                    checked={selectedIds.has(row.item.id)}
+                    onToggleItem={onToggleItem}
+                  />
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+    </>
   );
 }
 

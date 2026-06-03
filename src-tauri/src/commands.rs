@@ -102,16 +102,6 @@ pub fn save_settings(settings: Settings) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn dev_scan_cache_exists(scanner_id: String) -> Result<bool, String> {
-    crate::dev_cache::dev_cache_exists(&scanner_id)
-}
-
-#[tauri::command]
-pub fn read_dev_scan_cache(scanner_id: String) -> Result<ScanCategoryResult, String> {
-    crate::dev_cache::read_dev_cache(&scanner_id)
-}
-
-#[tauri::command]
 pub async fn start_scan(
     app: AppHandle,
     state: State<'_, AppState>,

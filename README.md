@@ -27,16 +27,6 @@ pnpm install
 pnpm tauri:dev
 ```
 
-### 开发：文件类型扫描调试缓存
-
-1. 在仓库根目录执行其一：
-   - `pnpm dev:cache-videos` → `.dev-cache/file_video.json`（推荐用于大列表调试）
-   - `pnpm dev:cache-images` → `.dev-cache/file_image.json`
-2. 执行 `pnpm tauri:dev`（开发模式默认打开「文件类型」Tab）
-3. 点击对应卡片从缓存加载；可在设置中调整各文件类型的最小扫描体积后重新生成缓存
-
-环境变量 `CLEANMAC_DEV_CACHE_DIR` 可覆盖缓存目录（测试用）。
-
 ## Build
 
 ```bash

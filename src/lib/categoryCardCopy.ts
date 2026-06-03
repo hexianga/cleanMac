@@ -26,11 +26,7 @@ export function categoryCardSubText(
   scanState: CategoryScanState,
   itemCount: number,
   scannerId: ScannerId,
-  devCacheAvailable?: boolean,
 ): string {
-  if (scanState === "unscanned" && devCacheAvailable) {
-    return "调试缓存可用";
-  }
   if (scanState === "scanning") {
     return "扫描中…";
   }

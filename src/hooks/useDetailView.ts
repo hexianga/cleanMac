@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import { mergeCategories, type ScannerId } from "../lib/categoryMeta";
-import { isDevCacheScannerId } from "../lib/devFileTypeCache";
 import { deleteItems } from "../lib/api";
 import { groupItemsForCategory } from "../lib/groupScanItems";
 import type { PermissionCopyVariant } from "../lib/permissionCopy";
@@ -22,8 +21,6 @@ export function useDetailView(
   setError: React.Dispatch<React.SetStateAction<string | null>>,
   onPermissionRequired: (variant: PermissionCopyVariant) => void,
   refreshDisk: () => Promise<void>,
-  loadDevScanCache: (scannerId: ScannerId) => Promise<boolean>,
-  devCacheAvailable: Partial<Record<ScannerId, boolean>>,
 ) {
   const [view, setView] = useState<AppView>("dashboard");
   const [detailScannerId, setDetailScannerId] = useState<ScannerId | null>(null);
@@ -85,15 +82,6 @@ export function useDetailView(
 
   const handleScanCategory = useCallback(
     (scannerId: ScannerId) => {
-      if (
-        import.meta.env.DEV &&
-        isDevCacheScannerId(scannerId) &&
-        devCacheAvailable[scannerId]
-      ) {
-        void loadDevScanCache(scannerId);
-        return;
-      }
-
       if (scannerId === "trash" && permissionStatus?.needsTrashAccess) {
         onPermissionRequired("trash");
         return;
@@ -109,8 +97,6 @@ export function useDetailView(
       void runScan([scannerId]);
     },
     [
-      devCacheAvailable,
-      loadDevScanCache,
       onPermissionRequired,
       permissionStatus?.needsDownloadsAccess,
       permissionStatus?.needsTrashAccess,
@@ -127,23 +113,10 @@ export function useDetailView(
     void runScan([scannerId]);
   }, [runScan, slowScanConfirmId]);
 
-  const handleOpenCategory = useCallback(
-    (scannerId: ScannerId) => {
-      if (import.meta.env.DEV && isDevCacheScannerId(scannerId)) {
-        void loadDevScanCache(scannerId).then((ok) => {
-          if (ok) {
-            setDetailScannerId(scannerId);
-            setView("detail");
-          }
-        });
-        return;
-      }
-
-      setDetailScannerId(scannerId);
-      setView("detail");
-    },
-    [loadDevScanCache],
-  );
+  const handleOpenCategory = useCallback((scannerId: ScannerId) => {
+    setDetailScannerId(scannerId);
+    setView("detail");
+  }, []);
 
   const handleBackToDashboard = useCallback(() => {
     setView("dashboard");

@@ -35,7 +35,6 @@ interface DashboardViewProps {
   categories: ScanCategoryResult[];
   scanState: Record<ScannerId, CategoryScanState>;
   selectedIdsByCategory: Record<ScannerId, Set<string>>;
-  devCacheAvailable?: Partial<Record<ScannerId, boolean>>;
   onOpenCategory: (scannerId: ScannerId) => void;
   onScanCategory: (scannerId: ScannerId) => void;
   onScanAll: () => void;
@@ -47,7 +46,6 @@ interface CardGridProps {
   categories: ScanCategoryResult[];
   scanState: Record<ScannerId, CategoryScanState>;
   selectedIdsByCategory: Record<ScannerId, Set<string>>;
-  devCacheAvailable?: Partial<Record<ScannerId, boolean>>;
   onOpenCategory: (scannerId: ScannerId) => void;
   onScanCategory: (scannerId: ScannerId) => void;
   onShowCacheImpact: (scannerId: "app_caches" | "dev_caches") => void;
@@ -58,7 +56,6 @@ function CategoryCardGrid({
   categories,
   scanState,
   selectedIdsByCategory,
-  devCacheAvailable,
   onOpenCategory,
   onScanCategory,
   onShowCacheImpact,
@@ -68,11 +65,11 @@ function CategoryCardGrid({
 
   const selectedCountInCategory = (scannerId: ScannerId) => {
     const ids = selectedIdsByCategory[scannerId];
-    const category = categoryById.get(scannerId);
-    if (!category || !ids) {
+    if (!ids?.size) {
       return 0;
     }
-    return category.items.filter((item) => ids.has(item.id)).length;
+    // Selection sets are per-scanner and rebuilt on scan/cache load/delete.
+    return ids.size;
   };
 
   return (
@@ -93,7 +90,6 @@ function CategoryCardGrid({
             category={categoryById.get(scannerId) ?? null}
             scanState={scanState[scannerId]}
             selectedCount={selectedCountInCategory(scannerId)}
-            devCacheAvailable={devCacheAvailable?.[scannerId]}
             onScan={onScanCategory}
             onOpen={onOpenCategory}
             onShowCacheImpact={
@@ -114,7 +110,6 @@ export function DashboardView({
   categories,
   scanState,
   selectedIdsByCategory,
-  devCacheAvailable,
   onOpenCategory,
   onScanCategory,
   onScanAll,
@@ -135,7 +130,6 @@ export function DashboardView({
     categories,
     scanState,
     selectedIdsByCategory,
-    devCacheAvailable,
     onOpenCategory,
     onScanCategory,
     onShowCacheImpact: (id: "app_caches" | "dev_caches") => setCacheImpactId(id),

@@ -9,7 +9,6 @@ import {
   ThemeIcon,
 } from "@mantine/core";
 import { SCANNER_META, type ScannerId } from "../lib/categoryMeta";
-import { isDevCacheScannerId } from "../lib/devFileTypeCache";
 import {
   categoryCardMainValue,
   categoryCardSubText,
@@ -22,7 +21,6 @@ interface CategoryCardProps {
   category: ScanCategoryResult | null;
   scanState: CategoryScanState;
   selectedCount: number;
-  devCacheAvailable?: boolean;
   onScan: (scannerId: ScannerId) => void;
   onOpen: (scannerId: ScannerId) => void;
   onShowCacheImpact?: () => void;
@@ -33,7 +31,6 @@ export function CategoryCard({
   category,
   scanState,
   selectedCount,
-  devCacheAvailable = false,
   onScan,
   onOpen,
   onShowCacheImpact,
@@ -42,23 +39,20 @@ export function CategoryCard({
   const Icon = meta.icon;
   const itemCount = category?.items.length ?? 0;
   const hasItems = itemCount > 0;
-  const isDevCacheCard = import.meta.env.DEV && isDevCacheScannerId(scannerId);
   const isScanning = scanState === "scanning";
-  const canOpen = isDevCacheCard
-    ? !isScanning
-    : scanState === "scanned" || devCacheAvailable;
+  const canOpen = scanState === "scanned";
   const needsPermission = scanState === "needs_permission";
   const isUnscanned = scanState === "unscanned";
   const showBadge = selectedCount > 0 && scanState === "scanned";
 
   const scanButtonLabel =
-    isDevCacheCard && devCacheAvailable
-      ? "重载缓存"
-      : scanState === "error"
+    scanState === "error"
         ? "重试"
         : hasItems || !isUnscanned
           ? "重扫"
           : "扫描";
+  const scanButtonVariant =
+    scanState === "unscanned" && !hasItems ? "filled" : "default";
   const scanButtonDisabled =
     isScanning ||
     (needsPermission &&
@@ -67,12 +61,7 @@ export function CategoryCard({
       scannerId !== "applications");
 
   const mainValue = categoryCardMainValue(scanState, category?.totalBytes ?? 0);
-  const subText = categoryCardSubText(
-    scanState,
-    itemCount,
-    scannerId,
-    devCacheAvailable,
-  );
+  const subText = categoryCardSubText(scanState, itemCount, scannerId);
 
   const handleCardClick = () => {
     if (canOpen) {
@@ -144,7 +133,7 @@ export function CategoryCard({
             </Stack>
             <Button
               size="xs"
-              variant="light"
+              variant={scanButtonVariant}
               disabled={scanButtonDisabled}
               onClick={(event) => {
                 event.stopPropagation();

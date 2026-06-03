@@ -3,7 +3,6 @@ mod app_identity;
 mod test_home;
 mod commands;
 mod delete;
-pub mod dev_cache;
 pub mod model;
 mod permissions;
 pub mod scan;
@@ -26,8 +25,6 @@ pub fn run() {
             commands::open_full_disk_access_settings,
             commands::get_settings,
             commands::save_settings,
-            commands::dev_scan_cache_exists,
-            commands::read_dev_scan_cache,
             commands::start_scan,
             commands::cancel_scan,
             commands::get_active_scanners,
